@@ -25,7 +25,7 @@ header{background:#8B0000;padding:10px 20px;display:flex;align-items:center;gap:
 .hbtn{background:rgba(255,179,179,0.15);border:1px solid rgba(255,179,179,0.35);color:white;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-family:'Poppins',sans-serif;font-weight:500;}
 .hbtn:hover{background:rgba(255,179,179,0.28);}
 .main{display:flex;flex:1;overflow:hidden;}
-.sidebar{width:280px;background:white;border-right:1px solid #FFCDD2;display:flex;flex-direction:column;overflow:hidden;}
+.sidebar{width:280px;min-width:280px;flex-shrink:0;background:white;border-right:1px solid #FFCDD2;display:flex;flex-direction:column;overflow:hidden;}
 .sidebar-top{padding:14px;border-bottom:1px solid #FFCDD2;}
 .sidebar-top input{width:100%;padding:8px 12px;border:1px solid #FFCDD2;border-radius:8px;font-size:13px;outline:none;font-family:'Poppins',sans-serif;background:#FFF5F5;color:#2D0000;}
 .sidebar-top input:focus{border-color:#8B0000;}
@@ -142,7 +142,7 @@ input:checked+.tgl-sl:before{transform:translateX(14px);}
 
 <div id="pin-screen">
   <div style="text-align:center;">
-    <div style="font-size:36px;margin-bottom:10px;">🌍</div>
+    <div style="font-size:36px;margin-bottom:10px;">&#127757;</div>
     <div style="color:#FFB3B3;font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">JAS TOURS & TRAVELS</div>
     <div style="color:#FFE0E0;font-size:20px;font-weight:700;">Supplier Directory</div>
   </div>
@@ -166,14 +166,14 @@ input:checked+.tgl-sl:before{transform:translateX(14px);}
     </div>
     <span id="hdr-count"></span>
     <div class="spacer"></div>
-    <button class="hbtn" id="ref-btn" onclick="refreshAll()">↺ Refresh</button>
-    <button class="hbtn" onclick="openDestPanel()">⚙️ Destinations</button>
-    <button class="hbtn" onclick="lockApp()">🔒 Lock</button>
+    <button class="hbtn" id="ref-btn" onclick="refreshAll()">&#8635; Refresh</button>
+    <button class="hbtn" onclick="openDestPanel()">&#9881;&#65039; Destinations</button>
+    <button class="hbtn" onclick="lockApp()">&#128274; Lock</button>
   </header>
   <div class="main">
     <div class="sidebar">
       <div class="sidebar-top">
-        <input type="text" id="s-input" placeholder="Search name, destination, city, state..." oninput="filterS()">
+        <input type="text" id="s-input" placeholder="Search name, destination, city, state..." oninput="debouncedSearch()">
         <div class="filter-row">
           <button class="filter-btn active" onclick="setF('all',this)">All</button>
           <button class="filter-btn" onclick="setF('active',this)">Active</button>
@@ -185,13 +185,13 @@ input:checked+.tgl-sl:before{transform:translateX(14px);}
       <div class="sup-list" id="s-list"></div>
     </div>
     <div class="detail" id="d-panel">
-      <div class="empty-st"><div style="font-size:48px;opacity:.3;">🏢</div><div style="font-weight:600;color:#8B0000;">Select a supplier</div><div style="font-size:12px;">Choose from the list on the left</div></div>
+      <div class="empty-st"><div style="font-size:48px;opacity:.3;">&#127970;</div><div style="font-weight:600;color:#8B0000;">Select a supplier</div><div style="font-size:12px;">Choose from the list on the left</div></div>
     </div>
   </div>
 </div>
 
 <div id="toast"></div>
-<div id="dest-panel"><div class="dpi"><div class="modal-hdr"><h2>⚙️ Manage Destinations</h2><button class="modal-cls" onclick="closeDestPanel()">✕</button></div><div class="modal-bdy" id="dp-body"><div style="padding:20px;color:#E57373;">Loading...</div></div></div></div>
+<div id="dest-panel"><div class="dpi"><div class="modal-hdr"><h2>&#9881;&#65039; Manage Destinations</h2><button class="modal-cls" onclick="closeDestPanel()">&#10005;</button></div><div class="modal-bdy" id="dp-body"><div style="padding:20px;color:#E57373;">Loading...</div></div></div></div>
 <div id="mc"></div>
 
 <script>
@@ -202,7 +202,7 @@ const SVC_TYPES=['Visa','Flights','Ground Transport','Accommodation','Cruises','
 const TIERS=['Standard','Deluxe','Luxury','Budget','SIC','Private','Visa Agent','Insurance'];
 const CURS=['INR','USD','AED','EUR','SGD','THB','MYR','LKR','NPR','BTN','AUD','GBP'];
 const ROLES=['Owner','Manager','Operations','Sales','Accounts','Employee'];
-let allS=[],supp=[],conts=[],dests=[],dconts=[],svcs=[],ctrs=[],dm=[];
+let allS=[],supp=[],conts=[],dests=[],dconts=[],svcs=[],ctrs=[],dm=[],areas=[];
 let aF='all',selId=null;
 
 // PIN + OTP Login via Edge Function
@@ -273,50 +273,73 @@ async function loadAll(){
       api('GET','supplier_contacts?select=*&limit=500'),
       api('GET','supplier_destinations?select=*&limit=500'),
       api('GET','supplier_destination_contacts?select=*&limit=500'),
-      api('GET','destination_master?select=*&order=name.asc&limit=200'),
+      api('GET','destination_master?select=*&order=name.asc&limit=300'),
       api('GET','country_master?select=*&order=name.asc&limit=200'),
     ]);
     try{svcs=await api('GET','supplier_services?select=*&limit=500');}catch(e){svcs=[];}
+    try{areas=await api('GET','destination_areas?select=*&order=destination_id.asc,sort_order.asc&limit=1000');}catch(e){areas=[];}
+    buildList();
     filterS();
   }catch(e){showToast('Load error: '+e.message,'error');}
   document.getElementById('ref-btn').textContent='↺ Refresh';
 }
 async function refreshAll(){await loadAll();if(selId)renderDetail(selId);}
 
-function filterS(){
-  const q=document.getElementById('s-input').value.toLowerCase().trim();
-  supp=allS.filter(s=>{
-    if(aF==='active'&&!s.is_active)return false;
-    if(aF==='inactive'&&s.is_active)return false;
-    if(!q)return true;
-    if((s.company_name||'').toLowerCase().includes(q))return true;
-    const sd=dests.filter(d=>d.supplier_id===s.id);
-    if(sd.some(d=>(d.destination||'').toLowerCase().includes(q)))return true;
-    if(sd.some(d=>{const x=dm.find(m=>m.name===(d.destination||'').toUpperCase());return x&&[(x.country||''),(x.state||''),(x.city||'')].some(v=>v.toLowerCase().includes(q));}))return true;
-    const sv=svcs.filter(v=>v.supplier_id===s.id);
-    if(sv.some(v=>(v.service_type||'').toLowerCase().includes(q)||(v.country||'').toLowerCase().includes(q)||(v.notes||'').toLowerCase().includes(q)))return true;
-    return false;
-  });
-  document.getElementById('s-count').textContent=supp.length+' supplier'+(supp.length!==1?'s':'');
-  document.getElementById('hdr-count').textContent=allS.length+' total';
+let _st=null;
+function debouncedSearch(){clearTimeout(_st);_st=setTimeout(filterS,250);}
+function clearSearch(){clearTimeout(_st);document.getElementById('s-input').value='';filterS();}
+// Pre-build search data once, render cards once
+function buildList(){
   const list=document.getElementById('s-list');
-  if(!supp.length){list.innerHTML='<div class="no-items" style="padding:20px;text-align:center;">No suppliers found</div>';return;}
-  list.innerHTML=supp.map(s=>{
+  list.innerHTML=allS.map(s=>{
     const ini=s.company_name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
-    const sd=dests.filter(d=>d.supplier_id===s.id).slice(0,3).map(d=>d.destination).join(' · ');
+    const sd=dests.filter(d=>d.supplier_id===s.id);
+    const sdNames=sd.slice(0,4).map(d=>{const m=dm.find(x=>x.id===d.destination_id);return m?m.name:(d.destination||'');}).filter(Boolean).join(' · ');
     const sv=svcs.filter(v=>v.supplier_id===s.id);
-    return `<div class="sup-item${selId===s.id?' active':''}" onclick="renderDetail(${s.id})">
-      <div style="display:flex;align-items:center;gap:8px;">
+    // Build searchable text stored in data attr - computed ONCE
+    const destText=sd.map(d=>{
+      const m=dm.find(x=>x.id===d.destination_id||x.name===(d.destination||'').toUpperCase());
+      return [(d.destination||''),(m?m.name:''),(m?m.country:''),(m?m.city:'')].join(' ');
+    }).join(' ');
+    const svcText=sv.map(v=>[(v.service_type||''),(v.country||''),(v.notes||'')].join(' ')).join(' ');
+    const areaDestIds=sd.map(d=>d.destination_id).filter(Boolean).join(',');
+    const searchText=(s.company_name+' '+destText+' '+svcText).toLowerCase();
+    return `<div class="sup-item" data-id="${s.id}" data-active="${s.is_active?1:0}" data-search="${searchText.replace(/"/g,' ')}" data-adest="${areaDestIds}" style="display:flex;" onclick="renderDetail(${s.id})">
+      <div style="display:flex;align-items:center;gap:8px;width:100%;">
         <div style="width:28px;height:28px;border-radius:50%;background:#FFEBEE;color:#8B0000;font-weight:700;font-size:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${ini}</div>
-        <div style="flex:1;min-width:0;"><div class="sup-name">${s.company_name}</div><div class="sup-dests">${(sd||'—')+(sv.length?' · 🛂'+sv.length:'')}</div></div>
+        <div style="flex:1;min-width:0;"><div class="sup-name">${s.company_name}</div><div class="sup-dests">${sdNames||'&mdash;'}${sv.length?' &middot; '+sv.length+' svc':''}</div></div>
         <span class="bdg ${s.is_active?'bdg-on':'bdg-off'}">${s.is_active?'Active':'Off'}</span>
       </div></div>`;
   }).join('');
 }
+function filterS(){
+  const q=document.getElementById('s-input').value.toLowerCase().trim();
+  const matchDest=q?new Set(areas.filter(a=>(a.name||'').toLowerCase().includes(q)||(a.state_hint||'').toLowerCase().includes(q)).map(a=>a.destination_id)):new Set();
+  let vis=0;
+  document.querySelectorAll('#s-list [data-id]').forEach(el=>{
+    const active=el.dataset.active==='1';
+    if(aF==='active'&&!active){el.style.display='none';return;}
+    if(aF==='inactive'&&active){el.style.display='none';return;}
+    if(q){
+      const st=el.dataset.search||'';
+      const di=(el.dataset.adest||'').split(',').filter(Boolean).map(Number);
+      if(!st.includes(q)&&!di.some(id=>matchDest.has(id))){el.style.display='none';return;}
+    }
+    el.style.display='flex';
+    el.classList.toggle('active',parseInt(el.dataset.id)===selId);
+    vis++;
+  });
+  let emp=document.getElementById('s-empty');
+  if(!vis){if(!emp){const d=document.createElement('div');d.id='s-empty';d.style.cssText='padding:20px;text-align:center;color:#E57373;font-size:13px;';d.textContent='No suppliers found';document.getElementById('s-list').appendChild(d);}}
+  else if(emp)emp.remove();
+  document.getElementById('hdr-count').textContent=allS.length+' total';
+}
+
 function setF(f,btn){aF=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');filterS();}
 
 function renderDetail(id){
-  selId=id;filterS();
+  selId=id;
+  document.querySelectorAll('#s-list [data-id]').forEach(el=>el.classList.toggle('active',parseInt(el.dataset.id)===id));
   const s=allS.find(x=>x.id===id);if(!s)return;
   const sc=conts.filter(c=>c.supplier_id===id);
   const sd=dests.filter(d=>d.supplier_id===id);
@@ -330,54 +353,58 @@ function renderDetail(id){
         <div style="flex:1;"><div class="co-nm">${s.company_name}</div><div class="co-mt">${geo||''}${s.website?' · <a href="'+esc(s.website)+'" target="_blank" style="color:#2563EB;">'+esc(s.website)+'</a>':''}</div></div>
         <div class="co-acts">
           <label class="tgl-wrap"><label class="tgl-sw"><input type="checkbox" ${s.is_active?'checked':''} onchange="toggleA(${id},this.checked)"><span class="tgl-sl"></span></label>${s.is_active?'Active':'Inactive'}</label>
-          <button class="ibtn" onclick="openEditS(${id})">✏️ Edit</button>
-          <button class="ibtn d" onclick="delS(${id})">🗑 Delete</button>
+          <button class="ibtn" onclick="openEditS(${id})">Edit Edit</button>
+          <button class="ibtn d" onclick="delS(${id})">Del Delete</button>
         </div>
       </div>
       <div class="info-chips">
         ${s.gst_number?`<div class="ic"><span>GST</span>${esc(s.gst_number)}</div>`:''}
         ${s.pan_number?`<div class="ic"><span>PAN</span>${esc(s.pan_number)}</div>`:''}
         ${s.tan_number?`<div class="ic"><span>TAN</span>${esc(s.tan_number)}</div>`:''}
-        ${s.payment_terms?`<div class="ic"><span>💳</span>${esc(s.payment_terms)}</div>`:''}
-        ${s.address?`<div class="ic"><span>📍</span>${esc(s.address)}</div>`:''}
+        ${s.payment_terms?`<div class="ic"><span>&#128179;</span>${esc(s.payment_terms)}</div>`:''}
+        ${s.address?`<div class="ic"><span>&#128205;</span>${esc(s.address)}</div>`:''}
       </div>
-      ${s.bank_details||s.notes?`<div class="info-box">${s.bank_details?'🏦 '+esc(s.bank_details):''} ${s.bank_details&&s.notes?'<br>':''}${s.notes?'📝 '+esc(s.notes):''}</div>`:''}
+      ${s.bank_details||s.notes?`<div class="info-box">${s.bank_details?'&#127974; '+esc(s.bank_details):''} ${s.bank_details&&s.notes?'<br>':''}${s.notes?'&#128221; '+esc(s.notes):''}</div>`:''}
     </div>
 
     <div class="sec">
-      <div class="sec-hdr"><span class="sec-ttl">👥 Company Contacts (${sc.length})</span><button class="add-btn" onclick="openAddC(${id})">+ Add</button></div>
+      <div class="sec-hdr"><span class="sec-ttl">Contacts (${sc.length})</span><button class="add-btn" onclick="openAddC(${id})">+ Add</button></div>
       ${sc.length?sc.map(c=>{const ci=c.name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();return`<div class="c-row">
         <div class="c-av">${ci}</div>
-        <div><div class="c-nm">${esc(c.name)}${c.role==='Owner'?' <span class="star">★</span>':''}</div><span class="rb rb-${(c.role||'Employee').replace(/\s/g,'-')}">${c.role||'—'}</span></div>
-        <div class="c-det">${c.email?`<a href="mailto:${esc(c.email)}">✉️ ${esc(c.email)}</a>`:''}${c.phone_mobile?`<span>📱 ${esc(c.phone_mobile)}</span>`:''}${c.whatsapp&&c.whatsapp!==c.phone_mobile?`<span>💬 ${esc(c.whatsapp)}</span>`:''}${c.phone_landline?`<span>☎️ ${esc(c.phone_landline)}</span>`:''}</div>
-        <div style="display:flex;gap:5px;margin-left:8px;flex-shrink:0;"><button class="ibtn" onclick="openEditC(${c.id})">✏️</button><button class="ibtn d" onclick="delC(${c.id})">🗑</button></div>
+        <div><div class="c-nm">${esc(c.name)}${c.role==='Owner'?' <span class="star">&#9733;</span>':''}</div><span class="rb rb-${(c.role||'Employee').replace(/\s/g,'-')}">${c.role||'—'}</span></div>
+        <div class="c-det">${c.email?`<a href="mailto:${esc(c.email)}">✉️ ${esc(c.email)}</a>`:''}${c.phone_mobile?`<span>&#128241; ${esc(c.phone_mobile)}</span>`:''}${c.whatsapp&&c.whatsapp!==c.phone_mobile?`<span>&#128172; ${esc(c.whatsapp)}</span>`:''}${c.phone_landline?`<span>☎️ ${esc(c.phone_landline)}</span>`:''}</div>
+        <div style="display:flex;gap:5px;margin-left:8px;flex-shrink:0;"><button class="ibtn" onclick="openEditC(${c.id})">Edit</button><button class="ibtn d" onclick="delC(${c.id})">Del</button></div>
       </div>`;}).join(''):'<div class="no-items">No contacts yet</div>'}
     </div>
 
     <div class="sec">
-      <div class="sec-hdr"><span class="sec-ttl">🌍 Destinations & Contacts (${sd.length})</span><button class="add-btn" onclick="openAddD(${id})">+ Add Destination</button></div>
+      <div class="sec-hdr"><span class="sec-ttl">Destinations & Contacts (${sd.length})</span><button class="add-btn" onclick="openAddD(${id})">+ Add Destination</button></div>
       ${sd.length?sd.map(d=>{
         const dc=dconts.filter(x=>x.destination_id===d.id);
-        const dmx=dm.find(x=>x.name===(d.destination||'').toUpperCase());
+        const dmx=dm.find(x=>x.id===d.destination_id||x.name===(d.destination||'').toUpperCase());
         const dg=dmx?[dmx.city,dmx.state,dmx.country].filter(Boolean).join(' › '):'';
         const tc=(d.tier||'Standard').replace(/\s/g,'-');
+        const destAreas=d.destination_id?areas.filter(a=>a.destination_id===d.destination_id):[];
+        const coveredAreas=d.area_ids&&d.area_ids.length?destAreas.filter(a=>d.area_ids.includes(a.id)):[];
+        const areasTag=coveredAreas.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">${coveredAreas.map(a=>`<span style="background:#FFEBEE;color:#8B0000;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">${esc(a.name)}</span>`).join('')}</div>`:'';
+        const destLabel=dmx?dmx.name:(d.destination||'?');
         return`<div class="dest-blk">
           <div class="dest-hdr">
-            <div><div class="dest-nm">${esc(d.destination)}</div>${dg?`<div class="dest-geo">📍 ${dg}</div>`:''}${d.package_name?`<div style="font-size:11px;color:#E57373;">📦 ${esc(d.package_name)}</div>`:''}</div>
+            <div><div class="dest-nm">${esc(destLabel)}</div>${dg?`<div class="dest-geo">&#128205; ${dg}</div>`:''}${d.package_name?`<div style="font-size:11px;color:#E57373;">&#128230; ${esc(d.package_name)}</div>`:''}${areasTag}</div>
             <span class="tb tb-${tc}">${d.tier||'Standard'}</span>
             <span class="cur-c">${d.currency||'INR'}</span>
             ${d.validity?`<span class="val-c">${esc(d.validity)}</span>`:''}
-            <button class="ibtn" onclick="openEditD(${d.id})">✏️</button>
-            <button class="ibtn d" onclick="delD(${d.id})">🗑</button>
+            <button class="ibtn" onclick="openEditD(${d.id})">Edit</button>
+            <button class="ibtn d" onclick="delD(${d.id})">Del</button>
           </div>
           ${d.notes?`<div class="dest-bdy"><div class="dest-notes">${esc(d.notes)}</div></div>`:''}
           <div class="dest-bdy"><div class="dc-wrap">
-            <div class="dc-ttl">👤 Destination Contacts (${dc.length})<button class="add-btn-sm" onclick="openAddDC(${d.id},${id})">+ Add</button></div>
+            <div class="dc-ttl">&#128100; Destination Contacts (${dc.length})<button class="add-btn-sm" onclick="openAddDC(${d.id},${id})">+ Add</button></div>
             ${dc.map(c=>`<div class="c-row" style="padding:4px 0;">
               <div class="c-av" style="width:26px;height:26px;font-size:9px;">${c.name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase()}</div>
               <div><div class="c-nm" style="font-size:12px;">${esc(c.name)}</div><span class="rb rb-${(c.role||'Employee').replace(/\s/g,'-')}" style="font-size:9px;">${c.role||'—'}</span></div>
-              <div class="c-det">${c.email?`<a href="mailto:${esc(c.email)}">✉️ ${esc(c.email)}</a>`:''}${c.phone_mobile?`<span>📱 ${esc(c.phone_mobile)}</span>`:''}</div>
-              <div style="display:flex;gap:4px;margin-left:8px;flex-shrink:0;"><button class="ibtn" onclick="openEditDC(${c.id})">✏️</button><button class="ibtn d" onclick="delDC(${c.id})">🗑</button></div>
+              <div class="c-det">${c.email?`<a href="mailto:${esc(c.email)}">✉️ ${esc(c.email)}</a>`:''}${c.phone_mobile?`<span>&#128241; ${esc(c.phone_mobile)}</span>`:''}</div>
+              <div style="display:flex;gap:4px;margin-left:8px;flex-shrink:0;"><button class="ibtn" onclick="openEditDC(${c.id})">Edit</button><button class="ibtn d" onclick="delDC(${c.id})">Del</button></div>
             </div>`).join('')}
           </div></div>
         </div>`;
@@ -385,7 +412,7 @@ function renderDetail(id){
     </div>
 
     <div class="sec">
-      <div class="sec-hdr"><span class="sec-ttl">🛂 Services (${sv.length})</span><button class="add-btn" onclick="openAddSvc(${id})">+ Add Service</button></div>
+      <div class="sec-hdr"><span class="sec-ttl"> Services (${sv.length})</span><button class="add-btn" onclick="openAddSvc(${id})">+ Add Service</button></div>
       ${svcs.length===0&&sv.length===0
         ?'<div class="no-items" style="color:#8B0000;">⚠️ Run SQL in Supabase first to create supplier_services table</div>'
         :sv.length?sv.map(v=>{const sc=(v.service_type||'Misc').replace(/\s/g,'-');return`<div class="svc-row">
@@ -393,18 +420,30 @@ function renderDetail(id){
           <span class="svc-co">${esc(v.country||'All')}</span>
           <span class="svc-nt">${esc(v.notes||'')}</span>
           <span class="svc-vl">${esc(v.validity||'')}</span>
-          <div style="display:flex;gap:5px;margin-left:8px;flex-shrink:0;"><button class="ibtn" onclick="openEditSvc(${v.id})">✏️</button><button class="ibtn d" onclick="delSvc(${v.id})">🗑</button></div>
+          <div style="display:flex;gap:5px;margin-left:8px;flex-shrink:0;"><button class="ibtn" onclick="openEditSvc(${v.id})">Edit</button><button class="ibtn d" onclick="delSvc(${v.id})">Del</button></div>
         </div>`;}).join(''):'<div class="no-items">No services yet</div>'}
     </div>`;
 }
 
 function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-async function toggleA(id,val){try{await api('PATCH',`suppliers?id=eq.${id}`,{is_active:val});const s=allS.find(x=>x.id===id);if(s)s.is_active=val;filterS();showToast(val?'Marked active':'Marked inactive','success');}catch(e){showToast('Error: '+e.message,'error');}}
+async function toggleA(id,val){
+  try{
+    await api('PATCH',`suppliers?id=eq.${id}`,{is_active:val});
+    const s=allS.find(x=>x.id===id);if(s)s.is_active=val;
+    const el=document.querySelector('[data-id="'+id+'"]');
+    if(el){
+      el.dataset.active=val?'1':'0';
+      const b=el.querySelector('.bdg');
+      if(b){b.className='bdg '+(val?'bdg-on':'bdg-off');b.textContent=val?'Active':'Off';}
+    }
+    filterS();showToast(val?'Marked active':'Marked inactive','success');
+  }catch(e){showToast('Error: '+e.message,'error');}
+}
 
 async function delS(id){
   if(!confirm('Delete this supplier and ALL contacts, destinations, services?'))return;
-  try{await api('DELETE',`suppliers?id=eq.${id}`);allS=allS.filter(x=>x.id!==id);conts=conts.filter(x=>x.supplier_id!==id);dests=dests.filter(x=>x.supplier_id!==id);svcs=svcs.filter(x=>x.supplier_id!==id);selId=null;filterS();document.getElementById('d-panel').innerHTML='<div class="empty-st"><div style="font-size:48px;opacity:.3;">🏢</div><div style="font-weight:600;color:#8B0000;">Select a supplier</div></div>';showToast('Supplier deleted','success');}catch(e){showToast('Error: '+e.message,'error');}
+  try{await api('DELETE',`suppliers?id=eq.${id}`);allS=allS.filter(x=>x.id!==id);conts=conts.filter(x=>x.supplier_id!==id);dests=dests.filter(x=>x.supplier_id!==id);svcs=svcs.filter(x=>x.supplier_id!==id);selId=null;const _d=document.querySelector('[data-id="'+id+'"]');if(_d)_d.remove();filterS();document.getElementById('d-panel').innerHTML='<div class="empty-st"><div style="font-size:48px;opacity:.3;">&#127970;</div><div style="font-weight:600;color:#8B0000;">Select a supplier</div></div>';showToast('Supplier deleted','success');}catch(e){showToast('Error: '+e.message,'error');}
 }
 
 async function loadStates(cn){const c=ctrs.find(x=>x.name===cn);if(!c)return[];return api('GET',`state_master?country_id=eq.${c.id}&order=name.asc&limit=200`);}
@@ -414,7 +453,7 @@ async function onCC(cid){const cn=document.getElementById(cid).value;const si=ci
 async function onSC(sid,cid){const sn=document.getElementById(sid).value;const cn=document.getElementById(cid).value;const ci=sid.replace('state','city');const ce=document.getElementById(ci);if(!ce)return;ce.innerHTML='<option>Loading...</option>';const ct=await loadCities(sn,cn);ce.innerHTML='<option value="">Select city</option>'+ct.map(c=>`<option value="${c.name}">${c.name}</option>`).join('');}
 function lev(a,b){const m=a.length,n=b.length,d=[];for(let i=0;i<=m;i++)d[i]=[i];for(let j=0;j<=n;j++)d[0][j]=j;for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)d[i][j]=a[i-1]===b[j-1]?d[i-1][j-1]:1+Math.min(d[i-1][j],d[i][j-1],d[i-1][j-1]);return d[m][n];}
 function sim(a,b){const m=Math.max(a.length,b.length);return m===0?1:(m-lev(a,b))/m;}
-async function chkCity(val,hid,cid,sid){const h=document.getElementById(hid);if(!val.trim()){h.style.display='none';return;}const cn=document.getElementById(cid).value;const sn=document.getElementById(sid).value;if(!cn||!sn){h.className='city-ht warn';h.textContent='Select country & state first';h.style.display='block';return;}const c=ctrs.find(x=>x.name===cn);if(!c)return;const st=await api('GET',`state_master?country_id=eq.${c.id}&name=eq.${encodeURIComponent(sn)}&limit=1`);if(!st.length)return;const ct=await api('GET',`city_master?state_id=eq.${st[0].id}&select=name&limit=200`);const ex=ct.find(x=>x.name.toLowerCase()===val.toLowerCase().trim());if(ex){h.className='city-ht err';h.textContent='⚠️ Already exists — select from dropdown';h.style.display='block';return;}const best=ct.map(x=>({n:x.name,s:sim(x.name.toLowerCase(),val.toLowerCase())})).sort((a,b)=>b.s-a.s)[0];if(best&&best.s>.7){h.className='city-ht warn';h.textContent=`⚠️ Did you mean "${best.n}"?`;h.style.display='block';}else{h.className='city-ht ok';h.textContent='✓ New city — will be added';h.style.display='block';}}
+async function chkCity(val,hid,cid,sid){const h=document.getElementById(hid);if(!val.trim()){h.style.display='none';return;}const cn=document.getElementById(cid).value;const sn=document.getElementById(sid).value;if(!cn||!sn){h.className='city-ht warn';h.textContent='Select country & state first';h.style.display='block';return;}const c=ctrs.find(x=>x.name===cn);if(!c)return;const st=await api('GET',`state_master?country_id=eq.${c.id}&name=eq.${encodeURIComponent(sn)}&limit=1`);if(!st.length)return;const ct=await api('GET',`city_master?state_id=eq.${st[0].id}&select=name&limit=200`);const ex=ct.find(x=>x.name.toLowerCase()===val.toLowerCase().trim());if(ex){h.className='city-ht err';h.textContent='⚠️ Already exists — select from dropdown';h.style.display='block';return;}const best=ct.map(x=>({n:x.name,s:sim(x.name.toLowerCase(),val.toLowerCase())})).sort((a,b)=>b.s-a.s)[0];if(best&&best.s>.7){h.className='city-ht warn';h.textContent=`⚠️ Did you mean "${best.n}"?`;h.style.display='block';}else{h.className='city-ht ok';h.textContent='&#10003; New city — will be added';h.style.display='block';}}
 async function addCity(iid,sid,hid,cid,stid){const val=document.getElementById(iid).value.trim();if(!val)return;const cn=document.getElementById(cid).value;const sn=document.getElementById(stid).value;if(!cn||!sn){alert('Select country and state first');return;}const c=ctrs.find(x=>x.name===cn);const st=await api('GET',`state_master?country_id=eq.${c.id}&name=eq.${encodeURIComponent(sn)}&limit=1`);if(!st.length){alert('State not found');return;}try{const r=await api('POST','city_master',{name:val,state_id:st[0].id,country_id:c.id});const sel=document.getElementById(sid);const opt=document.createElement('option');opt.value=val;opt.textContent=val;opt.selected=true;sel.appendChild(opt);document.getElementById(iid).value='';document.getElementById(hid).style.display='none';showToast('City added: '+val,'success');}catch(e){showToast('Error: '+e.message,'error');}}
 
 function showM(h){document.getElementById('mc').innerHTML=h;}
@@ -426,7 +465,7 @@ function mkSel(id,opts,val,cls=''){return`<select id="${id}" ${cls} style="width
 function openAddS(){openSM(null);}
 function openEditS(id){openSM(allS.find(x=>x.id===id));}
 function openSM(s){showM(`<div class="modal-overlay"><div class="modal">
-  <div class="modal-hdr"><h2>${s?'Edit Supplier':'Add New Supplier'}</h2><button class="modal-cls" onclick="closeModal()">✕</button></div>
+  <div class="modal-hdr"><h2>${s?'Edit Supplier':'Add New Supplier'}</h2><button class="modal-cls" onclick="closeModal()">&#10005;</button></div>
   <div class="modal-bdy">
     <div class="fg"><label>Company Name *</label><input id="fm-n" value="${s?esc(s.company_name):''}" oninput="chkDup(this.value,${s?.id||'null'})"><div class="dup-w" id="dup-w">⚠️ Supplier with this name already exists</div></div>
     <div class="fg"><label>Address</label><input id="fm-a" value="${s?esc(s.address||''):''}"></div>
@@ -456,14 +495,14 @@ function chkDup(val,cid){const e=document.getElementById('dup-w');e.style.displa
 async function saveS(id){
   const n=document.getElementById('fm-n').value.trim();if(!n){alert('Company name required');return;}
   const b={company_name:n,address:document.getElementById('fm-a').value.trim(),country:document.getElementById('fm-country').value,state:document.getElementById('fm-state').value,city:document.getElementById('fm-city').value,website:document.getElementById('fm-w').value.trim(),gst_number:document.getElementById('fm-g').value.trim(),pan_number:document.getElementById('fm-p').value.trim(),tan_number:document.getElementById('fm-t').value.trim(),payment_terms:document.getElementById('fm-pt').value.trim(),bank_details:document.getElementById('fm-b').value.trim(),notes:document.getElementById('fm-no').value.trim()};
-  try{if(id){await api('PATCH',`suppliers?id=eq.${id}`,b);const i=allS.findIndex(x=>x.id===id);if(i>=0)allS[i]={...allS[i],...b};}else{b.is_active=true;const r=await api('POST','suppliers',b);allS.push(r[0]);selId=r[0].id;}closeModal();filterS();if(selId)renderDetail(selId);showToast(id?'Supplier updated':'Supplier added','success');}catch(e){showToast('Error: '+e.message,'error');}
+  try{if(id){await api('PATCH',`suppliers?id=eq.${id}`,b);const i=allS.findIndex(x=>x.id===id);if(i>=0)allS[i]={...allS[i],...b};}else{b.is_active=true;const r=await api('POST','suppliers',b);allS.push(r[0]);selId=r[0].id;}closeModal();buildList();filterS();if(selId)renderDetail(selId);showToast(id?'Supplier updated':'Supplier added','success');}catch(e){showToast('Error: '+e.message,'error');}
 }
 
 // ---- CONTACT MODAL ----
 function openAddC(si){openCM(null,si);}
 function openEditC(id){openCM(conts.find(x=>x.id===id),null);}
 function openCM(c,si){showM(`<div class="modal-overlay"><div class="modal">
-  <div class="modal-hdr"><h2>${c?'Edit Contact':'Add Contact'}</h2><button class="modal-cls" onclick="closeModal()">✕</button></div>
+  <div class="modal-hdr"><h2>${c?'Edit Contact':'Add Contact'}</h2><button class="modal-cls" onclick="closeModal()">&#10005;</button></div>
   <div class="modal-bdy">
     <div class="fr"><div class="fg"><label>Name *</label><input id="cm-n" value="${c?esc(c.name):''}"></div><div class="fg"><label>Role</label>${mkSel('cm-r',ROLES,c?.role||'Employee')}</div></div>
     <div class="fg"><label>Email</label><input id="cm-e" value="${c?esc(c.email||''):''}"></div>
@@ -482,20 +521,40 @@ async function delC(id){if(!confirm('Delete this contact?'))return;try{await api
 // ---- DESTINATION MODAL ----
 function openAddD(si){openDM(null,si);}
 function openEditD(id){openDM(dests.find(x=>x.id===id),null);}
-function openDM(d,si){showM(`<div class="modal-overlay"><div class="modal">
-  <div class="modal-hdr"><h2>${d?'Edit Destination':'Add Destination'}</h2><button class="modal-cls" onclick="closeModal()">✕</button></div>
+function openDM(d,si){
+  const destOpts=dm.map(m=>`<option value="${m.id}"${d&&d.destination_id===m.id?' selected':''}>${esc(m.name)}${m.country?' ('+esc(m.country)+')':''}</option>`).join('');
+  const curDestId=d?d.destination_id:null;
+  const destAreas=curDestId?areas.filter(a=>a.destination_id===curDestId):[];
+  const curAreaIds=d&&d.area_ids?d.area_ids:[];
+  const areasHtml=destAreas.length?`<div class="fg" id="areas-wrap"><label>Areas Covered (optional — tick all that apply)</label><div id="areas-cb" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;">${destAreas.map(a=>`<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;background:#FFF5F5;padding:4px 10px;border-radius:20px;border:1px solid #FFCDD2;"><input type="checkbox" value="${a.id}"${curAreaIds.includes(a.id)?' checked':''} style="width:auto;margin:0;"> ${esc(a.name)}${a.state_hint?' <span style=\"color:#aaa;font-size:10px;\">('+esc(a.state_hint)+')</span>':''}</label>`).join('')}</div></div>`:'<div id="areas-wrap" style="display:none;"></div>';
+  showM(`<div class="modal-overlay"><div class="modal">
+  <div class="modal-hdr"><h2>${d?'Edit Destination':'Add Destination'}</h2><button class="modal-cls" onclick="closeModal()">&#10005;</button></div>
   <div class="modal-bdy">
-    <div class="fg"><label>Destination * (free text, auto CAPS)</label><input id="dm-d" value="${d?esc(d.destination):''}" oninput="this.value=this.value.toUpperCase()" placeholder="e.g. BALI, HONG KONG, KASHMIR"></div>
+    <div class="fg"><label>Destination *</label><select id="dm-dest" onchange="onDestChange()" style="width:100%;padding:9px 12px;border:1px solid #FFCDD2;border-radius:8px;font-size:13px;font-family:'Poppins',sans-serif;color:#2D0000;"><option value="">— Select destination —</option>${destOpts}</select></div>
+    ${areasHtml}
     <div class="fg"><label>Package Name</label><input id="dm-p" value="${d?esc(d.package_name||''):''}"></div>
     <div class="fr"><div class="fg"><label>Tier</label>${mkSel('dm-t',TIERS,d?.tier||'Standard')}</div><div class="fg"><label>Currency</label>${mkSel('dm-c',CURS,d?.currency||'INR')}</div></div>
     <div class="fg"><label>Validity</label><input id="dm-v" value="${d?esc(d.validity||''):''}"></div>
     <div class="fg"><label>Notes / Inclusions</label><textarea id="dm-n">${d?esc(d.notes||''):''}</textarea></div>
   </div>
   <div class="modal-ftr">${d?`<button class="btn-dl" onclick="delD(${d.id})">Delete</button>`:''}<button class="btn-cn" onclick="closeModal()">Cancel</button><button class="btn-sv" onclick="saveD(${d?.id||'null'},${d?.supplier_id||si})">${d?'Save':'Add'}</button></div>
-</div></div>`);}
+</div></div>`);
+}
+function onDestChange(){
+  const destId=parseInt(document.getElementById('dm-dest').value);
+  const wrap=document.getElementById('areas-wrap');
+  if(!destId||!wrap){return;}
+  const destAreas=areas.filter(a=>a.destination_id===destId);
+  if(!destAreas.length){wrap.innerHTML='';wrap.style.display='none';return;}
+  wrap.style.display='block';
+  wrap.innerHTML=`<label style="display:block;font-size:11px;font-weight:600;color:#E57373;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em;">Areas Covered (optional)</label><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;">${destAreas.map(a=>`<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;background:#FFF5F5;padding:4px 10px;border-radius:20px;border:1px solid #FFCDD2;"><input type="checkbox" value="${a.id}" style="width:auto;margin:0;"> ${esc(a.name)}${a.state_hint?' <span style="color:#aaa;font-size:10px;">('+esc(a.state_hint)+')</span>':''}</label>`).join('')}</div>`;
+}
 async function saveD(id,si){
-  const dest=document.getElementById('dm-d').value.trim().toUpperCase();if(!dest){alert('Destination required');return;}
-  const b={destination:dest,package_name:document.getElementById('dm-p').value.trim(),tier:document.getElementById('dm-t').value,currency:document.getElementById('dm-c').value,validity:document.getElementById('dm-v').value.trim(),notes:document.getElementById('dm-n').value.trim()};
+  const destId=parseInt(document.getElementById('dm-dest').value);if(!destId){alert('Please select a destination');return;}
+  const destObj=dm.find(x=>x.id===destId);
+  const areaChecks=document.querySelectorAll('#areas-wrap input[type=checkbox]:checked');
+  const areaIds=Array.from(areaChecks).map(x=>parseInt(x.value));
+  const b={destination:destObj?destObj.name:'',destination_id:destId,area_ids:areaIds,package_name:document.getElementById('dm-p').value.trim(),tier:document.getElementById('dm-t').value,currency:document.getElementById('dm-c').value,validity:document.getElementById('dm-v').value.trim(),notes:document.getElementById('dm-n').value.trim()};
   try{if(id){await api('PATCH',`supplier_destinations?id=eq.${id}`,b);const i=dests.findIndex(x=>x.id===id);if(i>=0)dests[i]={...dests[i],...b};}else{b.supplier_id=si;const r=await api('POST','supplier_destinations',b);dests.push(r[0]);}closeModal();renderDetail(selId);showToast(id?'Destination updated':'Destination added','success');}catch(e){showToast('Error: '+e.message,'error');}
 }
 async function delD(id){if(!confirm('Delete this destination and its contacts?'))return;try{await api('DELETE',`supplier_destinations?id=eq.${id}`);dests=dests.filter(x=>x.id!==id);dconts=dconts.filter(x=>x.destination_id!==id);closeModal();renderDetail(selId);showToast('Destination deleted','success');}catch(e){showToast('Error: '+e.message,'error');}}
@@ -504,7 +563,7 @@ async function delD(id){if(!confirm('Delete this destination and its contacts?')
 function openAddDC(di,si){openDCM(null,di,si);}
 function openEditDC(id){openDCM(dconts.find(x=>x.id===id),null,null);}
 function openDCM(c,di,si){showM(`<div class="modal-overlay"><div class="modal">
-  <div class="modal-hdr"><h2>${c?'Edit Destination Contact':'Add Destination Contact'}</h2><button class="modal-cls" onclick="closeModal()">✕</button></div>
+  <div class="modal-hdr"><h2>${c?'Edit Destination Contact':'Add Destination Contact'}</h2><button class="modal-cls" onclick="closeModal()">&#10005;</button></div>
   <div class="modal-bdy">
     <div class="fr"><div class="fg"><label>Name *</label><input id="dc-n" value="${c?esc(c.name):''}"></div><div class="fg"><label>Role</label>${mkSel('dc-r',ROLES,c?.role||'Operations')}</div></div>
     <div class="fg"><label>Email</label><input id="dc-e" value="${c?esc(c.email||''):''}"></div>
@@ -523,7 +582,7 @@ async function delDC(id){if(!confirm('Delete this contact?'))return;try{await ap
 function openAddSvc(si){openSvcM(null,si);}
 function openEditSvc(id){openSvcM(svcs.find(x=>x.id===id),null);}
 function openSvcM(v,si){showM(`<div class="modal-overlay"><div class="modal">
-  <div class="modal-hdr"><h2>${v?'Edit Service':'Add Service'}</h2><button class="modal-cls" onclick="closeModal()">✕</button></div>
+  <div class="modal-hdr"><h2>${v?'Edit Service':'Add Service'}</h2><button class="modal-cls" onclick="closeModal()">&#10005;</button></div>
   <div class="modal-bdy">
     <div class="fr">
       <div class="fg"><label>Service Type *</label>${mkSel('sv-t',SVC_TYPES,v?.service_type||'Visa')}</div>
@@ -541,25 +600,72 @@ async function saveSvc(id,si){
 async function delSvc(id){if(!confirm('Delete this service?'))return;try{await api('DELETE',`supplier_services?id=eq.${id}`);svcs=svcs.filter(x=>x.id!==id);closeModal();renderDetail(selId);showToast('Service deleted','success');}catch(e){showToast('Error: '+e.message,'error');}}
 
 // ---- DESTINATIONS MASTER PANEL ----
-async function openDestPanel(){document.getElementById('dest-panel').classList.add('open');await renderDP();}
+let _dpQ='',_dpT=null;
+function debouncedDP(){clearTimeout(_dpT);_dpT=setTimeout(renderDP,250);}
+function openDestPanel(){_dpQ='';document.getElementById('dest-panel').classList.add('open');const b=document.getElementById('dp-body');b.innerHTML='<div style="padding:20px;color:#E57373;">Loading...</div>';setTimeout(renderDP,0);}
 function closeDestPanel(){document.getElementById('dest-panel').classList.remove('open');}
-async function renderDP(){
+function renderDP(){
   const body=document.getElementById('dp-body');
+  // First time: build the toolbar + search input + list container
+  if(!document.getElementById('dp-list')){
+    body.innerHTML=
+      '<div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;">'+
+      '<button class="add-btn" onclick="openAddDM()">+ Add Destination</button>'+
+      '<input id="dp-search" style="flex:1;padding:7px 12px;border:1px solid #FFCDD2;border-radius:8px;font-size:13px;outline:none;font-family:Poppins,sans-serif;background:#FFF5F5;color:#2D0000;" placeholder="Search..." oninput="_dpQ=this.value;debouncedDP()">'+
+      '</div>'+
+      '<div id="dp-list"></div>';
+  }
+  const q=_dpQ.toLowerCase();
   const g={International:[],Domestic:[],Special:[]};
-  dm.forEach(d=>(g[d.region]||g['Special']).push(d));
-  body.innerHTML=`<div style="margin-bottom:14px;"><button class="add-btn" onclick="openAddDM()">+ Add Destination</button></div>`+
-    Object.entries(g).map(([grp,ds])=>ds.length?`<div style="margin-bottom:16px;">
-      <div style="font-size:11px;font-weight:700;color:#E57373;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">${grp} (${ds.length})</div>
-      ${ds.map(d=>{const u=dests.filter(x=>(x.destination||'').toUpperCase()===d.name).length;const geo=[d.city,d.state,d.country].filter(Boolean).join(' › ');return`<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #FFEBEE;">
-        <span style="font-weight:600;font-size:13px;color:#8B0000;flex:1;">${esc(d.name)}</span>
-        <span style="font-size:11px;color:#E57373;">${geo}</span>
-        ${u?`<span class="bdg bdg-on">${u} supp</span>`:''}
-        <button class="ibtn d" onclick="delDM(${d.id},${u},'${d.name.replace(/'/g,"\\'")}')">🗑</button>
-      </div>`;}).join('')}
-    </div>`:'').join('');
+  dm.forEach(d=>{
+    if(q&&!(d.name||'').toLowerCase().includes(q)&&!(d.country||'').toLowerCase().includes(q))return;
+    (g[d.region]||g['Special']).push(d);
+  });
+  const tot=Object.values(g).flat().length;
+  document.getElementById('dp-list').innerHTML=
+    (tot===0?'<div style="color:#E57373;font-size:13px;padding:8px 0;">No match for "'+esc(_dpQ)+'"</div>':'') +
+    Object.entries(g).map(function(e){var grp=e[0],ds=e[1];if(!ds.length)return'';
+      return '<div style="margin-bottom:16px;">'+
+        '<div style="font-size:11px;font-weight:700;color:#E57373;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">'+grp+' ('+ds.length+')</div>'+
+        ds.map(function(d){
+          var u=dests.filter(function(x){return(x.destination||'').toUpperCase()===d.name||x.destination_id===d.id;}).length;
+          var ac=areas.filter(function(x){return x.destination_id===d.id;}).length;
+          var geo=[d.city,d.state,d.country].filter(Boolean).join(' > ');
+          return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #FFEBEE;">'+
+            '<span style="font-weight:600;font-size:13px;color:#8B0000;flex:1;">'+esc(d.name)+'</span>'+
+            '<span style="font-size:11px;color:#E57373;">'+geo+'</span>'+
+            (ac?'<span style="font-size:10px;color:#aaa;padding:1px 6px;background:#F1F5F9;border-radius:4px;">'+ac+' areas</span>':'')+
+            (u?'<span class="bdg bdg-on">'+u+' supp</span>':'')+
+            '<button class="ibtn" onclick="openEditDM('+d.id+')" title="Edit">Edit</button>'+
+            '<button class="ibtn d" onclick="delDM('+d.id+','+u+',\''+d.name.replace(/'/g,"\\'")+'\')">Del</button>'+
+          '</div>';
+        }).join('')+
+      '</div>';
+    }).join('');
+}
+function openEditDM(id){
+  var d=dm.find(function(x){return x.id===id;});
+  if(!d)return;
+  openDMMedit(d);
+}
+function openDMMedit(d){showM('<div class="modal-overlay"><div class="modal">'+
+  '<div class="modal-hdr"><h2>Edit Destination</h2><button class="modal-cls" onclick="closeModal()">&#10005;</button></div>'+
+  '<div class="modal-bdy">'+
+  '<div class="fr"><div class="fg"><label>Name * (CAPS)</label><input id="adm-n" value="'+esc(d.name)+'" oninput="this.value=this.value.toUpperCase()"></div><div class="fg"><label>Region</label>'+mkSel('adm-r',['International','Domestic','Special'],d.region||'International')+'</div></div>'+
+  '<div class="fg"><label>Country</label>'+mkCS('adm-country',d.country||'')+'</div>'+
+  '<div class="fr">'+
+  '<div class="fg"><label>State</label><select id="adm-state" onchange="onSC(&quot;adm-state&quot;,&quot;adm-country&quot;)" style="width:100%;padding:9px 12px;border:1px solid #FFCDD2;border-radius:8px;font-size:13px;font-family:Poppins,sans-serif;color:#2D0000;"><option value="'+esc(d.state||'')+'">'+esc(d.state||'Select state')+'</option></select></div>'+
+  '<div class="fg"><label>City</label><select id="adm-city" style="width:100%;padding:9px 12px;border:1px solid #FFCDD2;border-radius:8px;font-size:13px;font-family:Poppins,sans-serif;color:#2D0000;"><option value="'+esc(d.city||'')+'">'+esc(d.city||'Select city')+'</option></select></div>'+
+  '</div></div>'+
+  '<div class="modal-ftr"><button class="btn-cn" onclick="closeModal()">Cancel</button><button class="btn-sv" onclick="saveDMedit('+d.id+')">Save</button></div>'+
+'</div></div>');}
+async function saveDMedit(id){
+  var n=document.getElementById('adm-n').value.trim().toUpperCase();if(!n){alert('Name required');return;}
+  var b={name:n,region:document.getElementById('adm-r').value,country:document.getElementById('adm-country').value,state:document.getElementById('adm-state').value,city:document.getElementById('adm-city').value};
+  try{await api('PATCH','destination_master?id=eq.'+id,b);var i=dm.findIndex(function(x){return x.id===id;});if(i>=0)dm[i]=Object.assign({},dm[i],b);closeModal();renderDP();showToast('Destination updated','success');}catch(e){showToast('Error: '+e.message,'error');}
 }
 function openAddDM(){showM(`<div class="modal-overlay"><div class="modal">
-  <div class="modal-hdr"><h2>Add Destination</h2><button class="modal-cls" onclick="closeModal()">✕</button></div>
+  <div class="modal-hdr"><h2>Add Destination</h2><button class="modal-cls" onclick="closeModal()">&#10005;</button></div>
   <div class="modal-bdy">
     <div class="fr"><div class="fg"><label>Name * (CAPS)</label><input id="adm-n" placeholder="e.g. BALI" oninput="this.value=this.value.toUpperCase()"></div><div class="fg"><label>Region</label>${mkSel('adm-r',['International','Domestic','Special'],'International')}</div></div>
     <div class="fg"><label>Country</label>${mkCS('adm-country')}</div>
