@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JAS Supplier Directory</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#8B0000;--gold:#C62828;--gold-light:#FFEBEE;--gray-50:#FFF5F5;--gray-100:#FFEBEE;--gray-200:#FFCDD2;--gray-300:#EF9A9A;--gray-500:#E57373;--gray-600:#C62828;--gray-800:#4A0000;--green:#2D9D6E;--green-light:#E6F5EF;--red:#8B0000;--red-light:#FFEBEE;--blue:#2563EB;--blue-light:#EFF6FF;--purple:#7C3AED;--purple-light:#F3E8FF;--orange:#E8690A;--orange-light:#FEF3E2;--radius:10px;--radius-sm:6px;--shadow:0 2px 12px rgba(139,0,0,0.08);--shadow-lg:0 8px 32px rgba(139,0,0,0.16);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Poppins',sans-serif;background:#FFF5F5;color:#2D0000;font-size:14px;}
+#pin-screen{position:fixed;inset:0;background:#8B0000;display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:18px;}
+#pin-input{background:rgba(255,255,255,0.12);border:1px solid rgba(255,200,200,0.3);color:white;font-size:28px;letter-spacing:12px;text-align:center;width:180px;padding:12px;border-radius:8px;outline:none;font-family:'Poppins',sans-serif;}
+#pin-input:focus{border-color:#FFB3B3;}
+#pin-error{color:#FFB3B3;font-size:13px;display:none;}
+#app{display:none;height:100vh;flex-direction:column;}
+header{background:#8B0000;padding:10px 20px;display:flex;align-items:center;gap:12px;}
+.logo-pill{background:white;border-radius:20px;padding:4px 12px 4px 4px;display:flex;align-items:center;gap:8px;}
+.logo-icon{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#FF6B6B,#8B0000);display:flex;align-items:center;justify-content:center;font-style:italic;font-weight:700;font-size:13px;color:white;flex-shrink:0;}
+.logo-text{font-size:12px;font-weight:700;color:#8B0000;font-family:'Poppins',sans-serif;}
+.hdr-brand{display:flex;flex-direction:column;}
+.hdr-brand small{font-size:9px;color:#FFB3B3;letter-spacing:1px;text-transform:uppercase;}
+.spacer{flex:1;}
+#hdr-count{color:rgba(255,179,179,0.7);font-size:12px;}
+.hbtn{background:rgba(255,179,179,0.15);border:1px solid rgba(255,179,179,0.35);color:white;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-family:'Poppins',sans-serif;font-weight:500;}
+.hbtn:hover{background:rgba(255,179,179,0.28);}
+.main{display:flex;flex:1;overflow:hidden;}
+.sidebar{width:280px;background:white;border-right:1px solid #FFCDD2;display:flex;flex-direction:column;overflow:hidden;}
+.sidebar-top{padding:14px;border-bottom:1px solid #FFCDD2;}
+.sidebar-top input{width:100%;padding:8px 12px;border:1px solid #FFCDD2;border-radius:8px;font-size:13px;outline:none;font-family:'Poppins',sans-serif;background:#FFF5F5;color:#2D0000;}
+.sidebar-top input:focus{border-color:#8B0000;}
+.filter-row{display:flex;gap:6px;margin-top:8px;}
+.filter-btn{flex:1;padding:5px;border:1px solid #FFCDD2;background:#FFF5F5;border-radius:6px;font-size:12px;cursor:pointer;text-align:center;font-family:'Poppins',sans-serif;color:#8B0000;}
+.filter-btn.active{background:#8B0000;color:white;border-color:#8B0000;}
+.sup-count{font-size:11px;color:#E57373;margin-top:8px;}
+.add-main{width:100%;margin-top:10px;padding:8px;background:#8B0000;color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;font-family:'Poppins',sans-serif;}
+.add-main:hover{background:#6B0000;}
+.sup-list{flex:1;overflow-y:auto;padding:8px;}
+.sup-item{padding:10px 12px;border-radius:8px;cursor:pointer;border:1px solid transparent;margin-bottom:4px;}
+.sup-item:hover{background:#FFF5F5;border-color:#FFCDD2;}
+.sup-item.active{background:#FFEBEE;border-color:#8B0000;}
+.sup-name{font-weight:600;font-size:13px;color:#2D0000;}
+.sup-dests{font-size:11px;color:#E57373;margin-top:2px;}
+.bdg{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;}
+.bdg-on{background:#E6F5EF;color:#2D9D6E;}
+.bdg-off{background:#FFEBEE;color:#8B0000;}
+.detail{flex:1;overflow-y:auto;padding:20px;}
+.empty-st{display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:12px;color:#E57373;}
+.co-card{background:white;border-radius:var(--radius);border:1px solid #FFCDD2;border-left:4px solid #8B0000;padding:18px;margin-bottom:16px;box-shadow:var(--shadow);}
+.co-hdr{display:flex;align-items:flex-start;gap:14px;}
+.co-av{width:46px;height:46px;border-radius:50%;background:#FFEBEE;color:#8B0000;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid #FFCDD2;}
+.co-nm{font-size:17px;font-weight:700;color:#8B0000;}
+.co-mt{font-size:12px;color:#E57373;margin-top:3px;}
+.co-acts{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.ibtn{background:none;border:1px solid #FFCDD2;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px;color:#8B0000;font-family:'Poppins',sans-serif;}
+.ibtn:hover{border-color:#8B0000;background:#FFF5F5;}
+.ibtn.d:hover{background:#FFEBEE;color:#6B0000;}
+.tgl-wrap{display:flex;align-items:center;gap:6px;font-size:12px;color:#E57373;}
+.tgl-sw{position:relative;width:32px;height:18px;}
+.tgl-sw input{opacity:0;width:0;height:0;}
+.tgl-sl{position:absolute;inset:0;background:#FFCDD2;border-radius:18px;cursor:pointer;transition:.2s;}
+.tgl-sl:before{content:'';position:absolute;width:12px;height:12px;left:3px;top:3px;background:white;border-radius:50%;transition:.2s;}
+input:checked+.tgl-sl{background:#2D9D6E;}
+input:checked+.tgl-sl:before{transform:translateX(14px);}
+.info-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+.ic{display:inline-flex;align-items:center;gap:5px;background:#FFF5F5;border:1px solid #FFCDD2;border-radius:20px;padding:3px 10px;font-size:11px;color:#2D0000;}
+.ic span{color:#E57373;font-size:10px;}
+.info-box{background:#FFF5F5;border:1px solid #FFCDD2;border-left:3px solid #8B0000;border-radius:6px;padding:10px 14px;margin-top:10px;font-size:12px;color:#2D0000;line-height:1.6;}
+.sec{background:white;border-radius:var(--radius);border:1px solid #FFCDD2;padding:16px;margin-bottom:16px;box-shadow:var(--shadow);}
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.sec-ttl{font-size:11px;font-weight:700;color:#E57373;text-transform:uppercase;letter-spacing:.08em;}
+.add-btn{background:#8B0000;color:white;border:none;border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:'Poppins',sans-serif;font-weight:500;}
+.add-btn:hover{background:#6B0000;}
+.add-btn-sm{background:#8B0000;color:white;border:none;border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer;font-family:'Poppins',sans-serif;}
+.c-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #FFEBEE;}
+.c-row:last-child{border-bottom:none;}
+.c-av{width:32px;height:32px;border-radius:50%;background:#FFEBEE;color:#8B0000;font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.c-nm{font-weight:600;font-size:13px;color:#2D0000;}
+.c-rl{font-size:11px;color:#E57373;}
+.c-det{display:flex;gap:10px;margin-left:auto;font-size:12px;color:#E57373;flex-wrap:wrap;justify-content:flex-end;}
+.c-det a{color:#2563EB;text-decoration:none;}
+.star{color:#F5A623;}
+.rb{display:inline-block;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:600;}
+.rb-Owner{background:#FFEBEE;color:#8B0000;}.rb-Manager{background:#EFF6FF;color:#1D4ED8;}.rb-Operations{background:#F3E8FF;color:#6D28D9;}.rb-Sales{background:#FEF3E2;color:#C2540A;}.rb-Accounts{background:#E6F5EF;color:#1B7A52;}.rb-Employee{background:#F1F5F9;color:#475569;}
+.dest-blk{border:1px solid #FFCDD2;border-radius:8px;margin-bottom:10px;overflow:hidden;}
+.dest-hdr{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#FFF5F5;flex-wrap:wrap;}
+.dest-nm{font-weight:700;font-size:13px;color:#8B0000;flex:1;}
+.dest-geo{font-size:10px;color:#888;margin-top:1px;}
+.dest-bdy{padding:10px 14px;}
+.dest-notes{font-size:12px;color:#2D0000;line-height:1.5;}
+.tb{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;}
+.tb-Standard{background:#DBEAFE;color:#1E40AF;}.tb-Deluxe{background:#FEF9C3;color:#854D0E;}.tb-Luxury{background:#FCE7F3;color:#9D174D;}.tb-Budget{background:#F0FDF4;color:#166534;}.tb-SIC{background:#F3E8FF;color:#6B21A8;}.tb-Private{background:#FFF7ED;color:#9A3412;}.tb-Visa-Agent{background:#FFE4E6;color:#9F1239;}.tb-Insurance{background:#ECFDF5;color:#065F46;}
+.cur-c{font-size:10px;color:#888;font-weight:600;padding:2px 6px;background:#F1F5F9;border-radius:4px;}
+.val-c{font-size:10px;color:#888;padding:1px 6px;}
+.dc-wrap{margin-top:10px;padding-top:10px;border-top:1px solid #FFEBEE;}
+.dc-ttl{font-size:11px;color:#E57373;font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+.svc-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #FFEBEE;}
+.svc-row:last-child{border-bottom:none;}
+.svb{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;min-width:110px;text-align:center;flex-shrink:0;}
+.svb-Visa{background:#DBEAFE;color:#1E40AF;}.svb-Flights{background:#FEF3C7;color:#92400E;}.svb-Ground-Transport{background:#D1FAE5;color:#065F46;}.svb-Accommodation{background:#EDE9FE;color:#5B21B6;}.svb-Cruises{background:#E0F2FE;color:#075985;}.svb-Insurance{background:#DCFCE7;color:#166534;}.svb-Money{background:#FEF9C3;color:#713F12;}.svb-Excursions{background:#FFEDD5;color:#9A3412;}.svb-Rail{background:#F0FDF4;color:#14532D;}.svb-Misc{background:#F1F5F9;color:#475569;}
+.svc-co{font-weight:600;font-size:13px;color:#2D0000;min-width:100px;}
+.svc-nt{font-size:12px;color:#E57373;flex:1;}
+.svc-vl{font-size:11px;color:#888;white-space:nowrap;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;}
+.modal{background:white;border-radius:12px;width:100%;max-width:580px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);}
+.modal-hdr{padding:18px 20px;border-bottom:1px solid #FFCDD2;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:white;z-index:1;}
+.modal-hdr h2{font-size:16px;font-weight:700;color:#8B0000;}
+.modal-cls{background:none;border:none;font-size:20px;cursor:pointer;color:#E57373;padding:4px 8px;}
+.modal-bdy{padding:20px;}
+.fg{margin-bottom:14px;}
+.fg label{display:block;font-size:11px;font-weight:600;color:#E57373;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em;}
+.fg input,.fg select,.fg textarea{width:100%;padding:9px 12px;border:1px solid #FFCDD2;border-radius:8px;font-size:13px;outline:none;font-family:'Poppins',sans-serif;color:#2D0000;background:white;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:#8B0000;}
+.fg textarea{min-height:80px;resize:vertical;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.modal-ftr{padding:14px 20px;border-top:1px solid #FFCDD2;display:flex;gap:10px;justify-content:flex-end;}
+.btn-sv{background:#8B0000;color:white;border:none;border-radius:8px;padding:9px 20px;cursor:pointer;font-size:13px;font-weight:600;font-family:'Poppins',sans-serif;}
+.btn-sv:hover{background:#6B0000;}
+.btn-cn{background:none;border:1px solid #FFCDD2;border-radius:8px;padding:9px 20px;cursor:pointer;font-size:13px;color:#E57373;font-family:'Poppins',sans-serif;}
+.btn-cn:hover{border-color:#8B0000;}
+.btn-dl{background:none;border:1px solid #FFCDD2;border-radius:8px;padding:9px 20px;cursor:pointer;font-size:13px;color:#8B0000;margin-right:auto;font-family:'Poppins',sans-serif;}
+.btn-dl:hover{background:#FFEBEE;}
+.city-ar{display:flex;gap:8px;margin-top:6px;}
+.city-ar input{flex:1;padding:8px 12px;border:1px solid #FFCDD2;border-radius:6px;font-size:12px;font-family:'Poppins',sans-serif;}
+.city-ar button{background:#8B0000;color:white;border:none;border-radius:6px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Poppins',sans-serif;white-space:nowrap;}
+.city-ht{font-size:11px;margin-top:4px;padding:4px 8px;border-radius:4px;display:none;}
+.city-ht.ok{background:#E6F5EF;color:#1B7A52;}
+.city-ht.warn{background:#FEF3C7;color:#92400E;}
+.city-ht.err{background:#FFEBEE;color:#8B0000;}
+.dup-w{font-size:11px;color:#8B0000;background:#FFEBEE;padding:4px 8px;border-radius:4px;margin-top:4px;display:none;}
+#dest-panel{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;}
+#dest-panel.open{display:flex;}
+.dpi{background:white;border-radius:12px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);}
+#toast{position:fixed;bottom:24px;right:24px;background:#8B0000;color:white;padding:12px 20px;border-radius:8px;font-size:13px;z-index:9000;display:none;font-family:'Poppins',sans-serif;box-shadow:var(--shadow-lg);}
+#toast.show{display:block;}
+#toast.success{background:#2D9D6E;}
+#toast.error{background:#8B0000;}
+.no-items{color:#E57373;font-size:13px;padding:8px 0;font-style:italic;}
+</style>
+</head>
+<body>
+
+<div id="pin-screen">
+  <div style="text-align:center;">
+    <div style="font-size:36px;margin-bottom:10px;">🌍</div>
+    <div style="color:#FFB3B3;font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">JAS TOURS & TRAVELS</div>
+    <div style="color:#FFE0E0;font-size:20px;font-weight:700;">Supplier Directory</div>
+  </div>
+  <p style="color:rgba(255,200,200,0.7);font-size:13px;">Step 1: Enter PIN</p>
+  <input type="password" id="pin-input" maxlength="4" placeholder="••••" autocomplete="off">
+  <p style="color:rgba(255,200,200,0.7);font-size:13px;margin-top:8px;">Step 2: Enter Authenticator Code</p>
+  <input type="text" id="otp-input" maxlength="6" placeholder="6-digit code" autocomplete="off" inputmode="numeric" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,200,200,0.3);color:white;font-size:24px;letter-spacing:8px;text-align:center;width:200px;padding:12px;border-radius:8px;outline:none;font-family:'Poppins',sans-serif;">
+  <button id="login-btn" onclick="doLogin()" style="background:white;color:#8B0000;border:none;padding:10px 32px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif;margin-top:4px;">Login</button>
+  <div id="pin-error" style="color:#FFB3B3;font-size:13px;display:none;">Incorrect PIN or code. Try again.</div>
+  <div id="pin-loading" style="color:#FFE0E0;font-size:13px;display:none;">Verifying...</div>
+</div>
+
+<div id="app">
+  <header>
+    <div class="hdr-brand">
+      <small>JAS TOURS & TRAVELS</small>
+      <div class="logo-pill">
+        <div class="logo-icon">J</div>
+        <span class="logo-text">Supplier Directory</span>
+      </div>
+    </div>
+    <span id="hdr-count"></span>
+    <div class="spacer"></div>
+    <button class="hbtn" id="ref-btn" onclick="refreshAll()">↺ Refresh</button>
+    <button class="hbtn" onclick="openDestPanel()">⚙️ Destinations</button>
+    <button class="hbtn" onclick="lockApp()">🔒 Lock</button>
+  </header>
+  <div class="main">
+    <div class="sidebar">
+      <div class="sidebar-top">
+        <input type="text" id="s-input" placeholder="Search name, destination, city, state..." oninput="filterS()">
+        <div class="filter-row">
+          <button class="filter-btn active" onclick="setF('all',this)">All</button>
+          <button class="filter-btn" onclick="setF('active',this)">Active</button>
+          <button class="filter-btn" onclick="setF('inactive',this)">Inactive</button>
+        </div>
+        <div class="sup-count" id="s-count"></div>
+        <button class="add-main" onclick="openAddS()">+ Add New Supplier</button>
+      </div>
+      <div class="sup-list" id="s-list"></div>
+    </div>
+    <div class="detail" id="d-panel">
+      <div class="empty-st"><div style="font-size:48px;opacity:.3;">🏢</div><div style="font-weight:600;color:#8B0000;">Select a supplier</div><div style="font-size:12px;">Choose from the list on the left</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="dest-panel"><div class="dpi"><div class="modal-hdr"><h2>⚙️ Manage Destinations</h2><button class="modal-cls" onclick="closeDestPanel()">✕</button></div><div class="modal-bdy" id="dp-body"><div style="padding:20px;color:#E57373;">Loading...</div></div></div></div>
+<div id="mc"></div>
+
+<script>
+const SUPA='https://yqmcmdnpatdbdsjxbdca.supabase.co/functions/v1/jas-proxy';
+let JAS_SESSION=sessionStorage.getItem('jas_session')||'';
+function getH(extra={}){return{'Content-Type':'application/json','x-jas-session':JAS_SESSION,'Prefer':'return=representation',...extra};}
+const SVC_TYPES=['Visa','Flights','Ground Transport','Accommodation','Cruises','Insurance','Money','Excursions','Rail','Misc'];
+const TIERS=['Standard','Deluxe','Luxury','Budget','SIC','Private','Visa Agent','Insurance'];
+const CURS=['INR','USD','AED','EUR','SGD','THB','MYR','LKR','NPR','BTN','AUD','GBP'];
+const ROLES=['Owner','Manager','Operations','Sales','Accounts','Employee'];
+let allS=[],supp=[],conts=[],dests=[],dconts=[],svcs=[],ctrs=[],dm=[];
+let aF='all',selId=null;
+
+// PIN + OTP Login via Edge Function
+async function doLogin(){
+  const pin=document.getElementById('pin-input').value;
+  const otp=document.getElementById('otp-input').value;
+  const errEl=document.getElementById('pin-error');
+  const loadEl=document.getElementById('pin-loading');
+  errEl.style.display='none';
+  loadEl.style.display='block';
+  try{
+    const EDGE='https://yqmcmdnpatdbdsjxbdca.supabase.co/functions/v1/jas-proxy';
+    const r=await fetch(EDGE+'/auth',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({pin,otp})
+    });
+    const d=await r.json();
+    loadEl.style.display='none';
+    if(d.success){
+      JAS_SESSION=d.token;
+      sessionStorage.setItem('jas_session',JAS_SESSION);
+      document.getElementById('pin-screen').style.display='none';
+      document.getElementById('app').style.display='flex';
+      loadAll();
+    } else {
+      errEl.style.display='block';
+      document.getElementById('pin-input').value='';
+      document.getElementById('otp-input').value='';
+    }
+  } catch(e){
+    loadEl.style.display='none';
+    errEl.textContent='Connection error. Try again.';
+    errEl.style.display='block';
+  }
+}
+// Allow Enter key on OTP field
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('otp-input').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+  document.getElementById('pin-input').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('otp-input').focus();});
+});
+function lockApp(){
+  JAS_SESSION='';
+  sessionStorage.removeItem('jas_session');
+  document.getElementById('pin-screen').style.display='flex';
+  document.getElementById('app').style.display='none';
+  document.getElementById('pin-input').value='';
+  document.getElementById('otp-input').value='';
+  document.getElementById('pin-error').style.display='none';
+}
+
+async function api(method,path,body){
+  try{
+    const r=await fetch(SUPA+'/rest/v1/'+path,{method,headers:getH(),body:body?JSON.stringify(body):undefined});
+    if(r.status===204)return{};
+    const txt=await r.text();
+    const data=txt?JSON.parse(txt):{};
+    if(data.code)throw new Error(data.message||data.code);
+    return data;
+  }catch(e){console.error('API:',method,path,e);throw e;}
+}
+
+async function loadAll(){
+  document.getElementById('ref-btn').textContent='↺ Loading...';
+  try{
+    [allS,conts,dests,dconts,dm,ctrs]=await Promise.all([
+      api('GET','suppliers?select=*&order=company_name.asc&limit=300'),
+      api('GET','supplier_contacts?select=*&limit=500'),
+      api('GET','supplier_destinations?select=*&limit=500'),
+      api('GET','supplier_destination_contacts?select=*&limit=500'),
+      api('GET','destination_master?select=*&order=name.asc&limit=200'),
+      api('GET','country_master?select=*&order=name.asc&limit=200'),
+    ]);
+    try{svcs=await api('GET','supplier_services?select=*&limit=500');}catch(e){svcs=[];}
+    filterS();
+  }catch(e){showToast('Load error: '+e.message,'error');}
+  document.getElementById('ref-btn').textContent='↺ Refresh';
+}
+async function refreshAll(){await loadAll();if(selId)renderDetail(selId);}
+
+function filterS(){
+  const q=document.getElementById('s-input').value.toLowerCase().trim();
+  supp=allS.filter(s=>{
+    if(aF==='active'&&!s.is_active)return false;
+    if(aF==='inactive'&&s.is_active)return false;
+    if(!q)return true;
+    if((s.company_name||'').toLowerCase().includes(q))return true;
+    const sd=dests.filter(d=>d.supplier_id===s.id);
+    if(sd.some(d=>(d.destination||'').toLowerCase().includes(q)))return true;
+    if(sd.some(d=>{const x=dm.find(m=>m.name===(d.destination||'').toUpperCase());return x&&[(x.country||''),(x.state||''),(x.city||'')].some(v=>v.toLowerCase().includes(q));}))return true;
+    const sv=svcs.filter(v=>v.supplier_id===s.id);
+    if(sv.some(v=>(v.service_type||'').toLowerCase().includes(q)||(v.country||'').toLowerCase().includes(q)||(v.notes||'').toLowerCase().includes(q)))return true;
+    return false;
+  });
+  document.getElementById('s-count').textContent=supp.length+' supplier'+(supp.length!==1?'s':'');
+  document.getElementById('hdr-count').textContent=allS.length+' total';
+  const list=document.getElementById('s-list');
+  if(!supp.length){list.innerHTML='<div class="no-items" style="padding:20px;text-align:center;">No suppliers found</div>';return;}
+  list.innerHTML=supp.map(s=>{
+    const ini=s.company_name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+    const sd=dests.filter(d=>d.supplier_id===s.id).slice(0,3).map(d=>d.destination).join(' · ');
+    const sv=svcs.filter(v=>v.supplier_id===s.id);
+    return `<div class="sup-item${selId===s.id?' active':''}" onclick="renderDetail(${s.id})">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:#FFEBEE;color:#8B0000;font-weight:700;font-size:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${ini}</div>
+        <div style="flex:1;min-width:0;"><div class="sup-name">${s.company_name}</div><div class="sup-dests">${(sd||'—')+(sv.length?' · 🛂'+sv.length:'')}</div></div>
+        <span class="bdg ${s.is_active?'bdg-on':'bdg-off'}">${s.is_active?'Active':'Off'}</span>
+      </div></div>`;
+  }).join('');
+}
+function setF(f,btn){aF=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');filterS();}
+
+function renderDetail(id){
+  selId=id;filterS();
+  const s=allS.find(x=>x.id===id);if(!s)return;
+  const sc=conts.filter(c=>c.supplier_id===id);
+  const sd=dests.filter(d=>d.supplier_id===id);
+  const sv=svcs.filter(v=>v.supplier_id===id);
+  const ini=s.company_name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+  const geo=[s.city,s.state,s.country].filter(Boolean).join(' › ');
+  document.getElementById('d-panel').innerHTML=`
+    <div class="co-card">
+      <div class="co-hdr">
+        <div class="co-av">${ini}</div>
+        <div style="flex:1;"><div class="co-nm">${s.company_name}</div><div class="co-mt">${geo||''}${s.website?' · <a href="'+esc(s.website)+'" target="_blank" style="color:#2563EB;">'+esc(s.website)+'</a>':''}</div></div>
+        <div class="co-acts">
+          <label class="tgl-wrap"><label class="tgl-sw"><input type="checkbox" ${s.is_active?'checked':''} onchange="toggleA(${id},this.checked)"><span class="tgl-sl"></span></label>${s.is_active?'Active':'Inactive'}</label>
+          <button class="ibtn" onclick="openEditS(${id})">✏️ Edit</button>
+          <button class="ibtn d" onclick="delS(${id})">🗑 Delete</button>
+        </div>
+      </div>
+      <div class="info-chips">
+        ${s.gst_number?`<div class="ic"><span>GST</span>${esc(s.gst_number)}</div>`:''}
+        ${s.pan_number?`<div class="ic"><span>PAN</span>${esc(s.pan_number)}</div>`:''}
+        ${s.tan_number?`<div class="ic"><span>TAN</span>${esc(s.tan_number)}</div>`:''}
+        ${s.payment_terms?`<div class="ic"><span>💳</span>${esc(s.payment_terms)}</div>`:''}
+        ${s.address?`<div class="ic"><span>📍</span>${esc(s.address)}</div>`:''}
+      </div>
+      ${s.bank_details||s.notes?`<div class="info-box">${s.bank_details?'🏦 '+esc(s.bank_details):''} ${s.bank_details&&s.notes?'<br>':''}${s.notes?'📝 '+esc(s.notes):''}</div>`:''}
+    </div>
+
+    <div class="sec">
+      <div class="sec-hdr"><span class="sec-ttl">👥 Company Contacts (${sc.length})</span><button class="add-btn" onclick="openAddC(${id})">+ Add</button></div>
+      ${sc.length?sc.map(c=>{const ci=c.name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();return`<div class="c-row">
+        <div class="c-av">${ci}</div>
+        <div><div class="c-nm">${esc(c.name)}${c.role==='Owner'?' <span class="star">★</span>':''}</div><span class="rb rb-${(c.role||'Employee').replace(/\s/g,'-')}">${c.role||'—'}</span></div>
+        <div class="c-det">${c.email?`<a href="mailto:${esc(c.email)}">✉️ ${esc(c.email)}</a>`:''}${c.phone_mobile?`<span>📱 ${esc(c.phone_mobile)}</span>`:''}${c.whatsapp&&c.whatsapp!==c.phone_mobile?`<span>💬 ${esc(c.whatsapp)}</span>`:''}${c.phone_landline?`<span>☎️ ${esc(c.phone_landline)}</span>`:''}</div>
+        <div style="display:flex;gap:5px;margin-left:8px;flex-shrink:0;"><button class="ibtn" onclick="openEditC(${c.id})">✏️</button><button class="ibtn d" onclick="delC(${c.id})">🗑</button></div>
+      </div>`;}).join(''):'<div class="no-items">No contacts yet</div>'}
+    </div>
+
+    <div class="sec">
+      <div class="sec-hdr"><span class="sec-ttl">🌍 Destinations & Contacts (${sd.length})</span><button class="add-btn" onclick="openAddD(${id})">+ Add Destination</button></div>
+      ${sd.length?sd.map(d=>{
+        const dc=dconts.filter(x=>x.destination_id===d.id);
+        const dmx=dm.find(x=>x.name===(d.destination||'').toUpperCase());
+        const dg=dmx?[dmx.city,dmx.state,dmx.country].filter(Boolean).join(' › '):'';
+        const tc=(d.tier||'Standard').replace(/\s/g,'-');
+        return`<div class="dest-blk">
+          <div class="dest-hdr">
+            <div><div class="dest-nm">${esc(d.destination)}</div>${dg?`<div class="dest-geo">📍 ${dg}</div>`:''}${d.package_name?`<div style="font-size:11px;color:#E57373;">📦 ${esc(d.package_name)}</div>`:''}</div>
+            <span class="tb tb-${tc}">${d.tier||'Standard'}</span>
+            <span class="cur-c">${d.currency||'INR'}</span>
+            ${d.validity?`<span class="val-c">${esc(d.validity)}</span>`:''}
+            <button class="ibtn" onclick="openEditD(${d.id})">✏️</button>
+            <button class="ibtn d" onclick="delD(${d.id})">🗑</button>
+          </div>
+          ${d.notes?`<div class="dest-bdy"><div class="dest-notes">${esc(d.notes)}</div></div>`:''}
+          <div class="dest-bdy"><div class="dc-wrap">
+            <div class="dc-ttl">👤 Destination Contacts (${dc.length})<button class="add-btn-sm" onclick="openAddDC(${d.id},${id})">+ Add</button></div>
+            ${dc.map(c=>`<div class="c-row" style="padding:4px 0;">
+              <div class="c-av" style="width:26px;height:26px;font-size:9px;">${c.name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase()}</div>
+              <div><div class="c-nm" style="font-size:12px;">${esc(c.name)}</div><span class="rb rb-${(c.role||'Employee').replace(/\s/g,'-')}" style="font-size:9px;">${c.role||'—'}</span></div>
+              <div class="c-det">${c.email?`<a href="mailto:${esc(c.email)}">✉️ ${esc(c.email)}</a>`:''}${c.phone_mobile?`<span>📱 ${esc(c.phone_mobile)}</span>`:''}</div>
+              <div style="display:flex;gap:4px;margin-left:8px;flex-shrink:0;"><button class="ibtn" onclick="openEditDC(${c.id})">✏️</button><button class="ibtn d" onclick="delDC(${c.id})">🗑</button></div>
+            </div>`).join('')}
+          </div></div>
+        </div>`;
+      }).join(''):'<div class="no-items">No destinations yet</div>'}
+    </div>
+
+    <div class="sec">
+      <div class="sec-hdr"><span class="sec-ttl">🛂 Services (${sv.length})</span><button class="add-btn" onclick="openAddSvc(${id})">+ Add Service</button></div>
+      ${svcs.length===0&&sv.length===0
+        ?'<div class="no-items" style="color:#8B0000;">⚠️ Run SQL in Supabase first to create supplier_services table</div>'
+        :sv.length?sv.map(v=>{const sc=(v.service_type||'Misc').replace(/\s/g,'-');return`<div class="svc-row">
+          <span class="svb svb-${sc}">${esc(v.service_type)}</span>
+          <span class="svc-co">${esc(v.country||'All')}</span>
+          <span class="svc-nt">${esc(v.notes||'')}</span>
+          <span class="svc-vl">${esc(v.validity||'')}</span>
+          <div style="display:flex;gap:5px;margin-left:8px;flex-shrink:0;"><button class="ibtn" onclick="openEditSvc(${v.id})">✏️</button><button class="ibtn d" onclick="delSvc(${v.id})">🗑</button></div>
+        </div>`;}).join(''):'<div class="no-items">No services yet</div>'}
+    </div>`;
+}
+
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+async function toggleA(id,val){try{await api('PATCH',`suppliers?id=eq.${id}`,{is_active:val});const s=allS.find(x=>x.id===id);if(s)s.is_active=val;filterS();showToast(val?'Marked active':'Marked inactive','success');}catch(e){showToast('Error: '+e.message,'error');}}
+
+async function delS(id){
+  if(!confirm('Delete this supplier and ALL contacts, destinations, services?'))return;
+  try{await api('DELETE',`suppliers?id=eq.${id}`);allS=allS.filter(x=>x.id!==id);conts=conts.filter(x=>x.supplier_id!==id);dests=dests.filter(x=>x.supplier_id!==id);svcs=svcs.filter(x=>x.supplier_id!==id);selId=null;filterS();document.getElementById('d-panel').innerHTML='<div class="empty-st"><div style="font-size:48px;opacity:.3;">🏢</div><div style="font-weight:600;color:#8B0000;">Select a supplier</div></div>';showToast('Supplier deleted','success');}catch(e){showToast('Error: '+e.message,'error');}
+}
+
+async function loadStates(cn){const c=ctrs.find(x=>x.name===cn);if(!c)return[];return api('GET',`state_master?country_id=eq.${c.id}&order=name.asc&limit=200`);}
+async function loadCities(sn,cn){const c=ctrs.find(x=>x.name===cn);if(!c)return[];const st=await api('GET',`state_master?country_id=eq.${c.id}&name=eq.${encodeURIComponent(sn)}&limit=1`);if(!st.length)return[];return api('GET',`city_master?state_id=eq.${st[0].id}&order=name.asc&limit=200`);}
+function mkCS(id,val=''){return`<select id="${id}" onchange="onCC('${id}')" style="width:100%;padding:9px 12px;border:1px solid #FFCDD2;border-radius:8px;font-size:13px;font-family:'Poppins',sans-serif;color:#2D0000;"><option value="">Select country</option>${ctrs.map(c=>`<option value="${c.name}"${c.name===val?' selected':''}>${c.name}</option>`).join('')}</select>`;}
+async function onCC(cid){const cn=document.getElementById(cid).value;const si=cid.replace('country','state');const ci=cid.replace('country','city');const se=document.getElementById(si);const ce=document.getElementById(ci);if(!se)return;se.innerHTML='<option>Loading...</option>';if(ce)ce.innerHTML='<option value="">Select city</option>';const st=await loadStates(cn);se.innerHTML='<option value="">Select state</option>'+st.map(s=>`<option value="${s.name}">${s.name}</option>`).join('');}
+async function onSC(sid,cid){const sn=document.getElementById(sid).value;const cn=document.getElementById(cid).value;const ci=sid.replace('state','city');const ce=document.getElementById(ci);if(!ce)return;ce.innerHTML='<option>Loading...</option>';const ct=await loadCities(sn,cn);ce.innerHTML='<option value="">Select city</option>'+ct.map(c=>`<option value="${c.name}">${c.name}</option>`).join('');}
+function lev(a,b){const m=a.length,n=b.length,d=[];for(let i=0;i<=m;i++)d[i]=[i];for(let j=0;j<=n;j++)d[0][j]=j;for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)d[i][j]=a[i-1]===b[j-1]?d[i-1][j-1]:1+Math.min(d[i-1][j],d[i][j-1],d[i-1][j-1]);return d[m][n];}
+function sim(a,b){const m=Math.max(a.length,b.length);return m===0?1:(m-lev(a,b))/m;}
+async function chkCity(val,hid,cid,sid){const h=document.getElementById(hid);if(!val.trim()){h.style.display='none';return;}const cn=document.getElementById(cid).value;const sn=document.getElementById(sid).value;if(!cn||!sn){h.className='city-ht warn';h.textContent='Select country & state first';h.style.display='block';return;}const c=ctrs.find(x=>x.name===cn);if(!c)return;const st=await api('GET',`state_master?country_id=eq.${c.id}&name=eq.${encodeURIComponent(sn)}&limit=1`);if(!st.length)return;const ct=await api('GET',`city_master?state_id=eq.${st[0].id}&select=name&limit=200`);const ex=ct.find(x=>x.name.toLowerCase()===val.toLowerCase().trim());if(ex){h.className='city-ht err';h.textContent='⚠️ Already exists — select from dropdown';h.style.display='block';return;}const best=ct.map(x=>({n:x.name,s:sim(x.name.toLowerCase(),val.toLowerCase())})).sort((a,b)=>b.s-a.s)[0];if(best&&best.s>.7){h.className='city-ht warn';h.textContent=`⚠️ Did you mean "${best.n}"?`;h.style.display='block';}else{h.className='city-ht ok';h.textContent='✓ New city — will be added';h.style.display='block';}}
+async function addCity(iid,sid,hid,cid,stid){const val=document.getElementById(iid).value.trim();if(!val)return;const cn=document.getElementById(cid).value;const sn=document.getElementById(stid).value;if(!cn||!sn){alert('Select country and state first');return;}const c=ctrs.find(x=>x.name===cn);const st=await api('GET',`state_master?country_id=eq.${c.id}&name=eq.${encodeURIComponent(sn)}&limit=1`);if(!st.length){alert('State not found');return;}try{const r=await api('POST','city_master',{name:val,state_id:st[0].id,country_id:c.id});const sel=document.getElementById(sid);const opt=document.createElement('option');opt.value=val;opt.textContent=val;opt.selected=true;sel.appendChild(opt);document.getElementById(iid).value='';document.getElementById(hid).style.display='none';showToast('City added: '+val,'success');}catch(e){showToast('Error: '+e.message,'error');}}
+
+function showM(h){document.getElementById('mc').innerHTML=h;}
+function closeModal(){document.getElementById('mc').innerHTML='';}
+
+function mkSel(id,opts,val,cls=''){return`<select id="${id}" ${cls} style="width:100%;padding:9px 12px;border:1px solid #FFCDD2;border-radius:8px;font-size:13px;font-family:'Poppins',sans-serif;color:#2D0000;">${opts.map(o=>`<option value="${o}"${o===val?' selected':''}>${o}</option>`).join('')}</select>`;}
+
+// ---- SUPPLIER MODAL ----
+function openAddS(){openSM(null);}
+function openEditS(id){openSM(allS.find(x=>x.id===id));}
+function openSM(s){showM(`<div class="modal-overlay"><div class="modal">
+  <div class="modal-hdr"><h2>${s?'Edit Supplier':'Add New Supplier'}</h2><button class="modal-cls" onclick="closeModal()">✕</button></div>
+  <div class="modal-bdy">
+    <div class="fg"><label>Company Name *</label><input id="fm-n" value="${s?esc(s.company_name):''}" oninput="chkDup(this.value,${s?.id||'null'})"><div class="dup-w" id="dup-w">⚠️ Supplier with this name already exists</div></div>
+    <div class="fg"><label>Address</label><input id="fm-a" value="${s?esc(s.address||''):''}"></div>
+    <div class="fr">
+      <div class="fg"><label>Country</label>${mkCS('fm-country',s?.country||'')}</div>
+      <div class="fg"><label>State</label><select id="fm-state" onchange="onSC('fm-state','fm-country')" style="width:100%;padding:9px 12px;border:1px solid #FFCDD2;border-radius:8px;font-size:13px;font-family:'Poppins',sans-serif;color:#2D0000;"><option value="${s?.state||''}">${s?.state||'Select state'}</option></select></div>
+    </div>
+    <div class="fg"><label>City</label><select id="fm-city" style="width:100%;padding:9px 12px;border:1px solid #FFCDD2;border-radius:8px;font-size:13px;font-family:'Poppins',sans-serif;color:#2D0000;"><option value="${s?.city||''}">${s?.city||'Select city'}</option></select>
+      <div class="city-ar"><input id="fm-nc" placeholder="City not in list? Type here..." oninput="chkCity(this.value,'fm-ch','fm-country','fm-state')"><button onclick="addCity('fm-nc','fm-city','fm-ch','fm-country','fm-state')">+ Add City</button></div>
+      <div class="city-ht" id="fm-ch"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>Website</label><input id="fm-w" value="${s?esc(s.website||''):''}"></div>
+      <div class="fg"><label>GST</label><input id="fm-g" value="${s?esc(s.gst_number||''):''}"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>PAN</label><input id="fm-p" value="${s?esc(s.pan_number||''):''}" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="fg"><label>TAN</label><input id="fm-t" value="${s?esc(s.tan_number||''):''}" oninput="this.value=this.value.toUpperCase()"></div>
+    </div>
+    <div class="fg"><label>Payment Terms</label><input id="fm-pt" value="${s?esc(s.payment_terms||''):''}"></div>
+    <div class="fg"><label>Bank Details</label><textarea id="fm-b">${s?esc(s.bank_details||''):''}</textarea></div>
+    <div class="fg"><label>Notes</label><textarea id="fm-no">${s?esc(s.notes||''):''}</textarea></div>
+  </div>
+  <div class="modal-ftr"><button class="btn-cn" onclick="closeModal()">Cancel</button><button class="btn-sv" onclick="saveS(${s?.id||'null'})">${s?'Save Changes':'Add Supplier'}</button></div>
+</div></div>`);}
+function chkDup(val,cid){const e=document.getElementById('dup-w');e.style.display=allS.some(s=>s.company_name.toLowerCase()===val.toLowerCase().trim()&&s.id!==cid)?'block':'none';}
+async function saveS(id){
+  const n=document.getElementById('fm-n').value.trim();if(!n){alert('Company name required');return;}
+  const b={company_name:n,address:document.getElementById('fm-a').value.trim(),country:document.getElementById('fm-country').value,state:document.getElementById('fm-state').value,city:document.getElementById('fm-city').value,website:document.getElementById('fm-w').value.trim(),gst_number:document.getElementById('fm-g').value.trim(),pan_number:document.getElementById('fm-p').value.trim(),tan_number:document.getElementById('fm-t').value.trim(),payment_terms:document.getElementById('fm-pt').value.trim(),bank_details:document.getElementById('fm-b').value.trim(),notes:document.getElementById('fm-no').value.trim()};
+  try{if(id){await api('PATCH',`suppliers?id=eq.${id}`,b);const i=allS.findIndex(x=>x.id===id);if(i>=0)allS[i]={...allS[i],...b};}else{b.is_active=true;const r=await api('POST','suppliers',b);allS.push(r[0]);selId=r[0].id;}closeModal();filterS();if(selId)renderDetail(selId);showToast(id?'Supplier updated':'Supplier added','success');}catch(e){showToast('Error: '+e.message,'error');}
+}
+
+// ---- CONTACT MODAL ----
+function openAddC(si){openCM(null,si);}
+function openEditC(id){openCM(conts.find(x=>x.id===id),null);}
+function openCM(c,si){showM(`<div class="modal-overlay"><div class="modal">
+  <div class="modal-hdr"><h2>${c?'Edit Contact':'Add Contact'}</h2><button class="modal-cls" onclick="closeModal()">✕</button></div>
+  <div class="modal-bdy">
+    <div class="fr"><div class="fg"><label>Name *</label><input id="cm-n" value="${c?esc(c.name):''}"></div><div class="fg"><label>Role</label>${mkSel('cm-r',ROLES,c?.role||'Employee')}</div></div>
+    <div class="fg"><label>Email</label><input id="cm-e" value="${c?esc(c.email||''):''}"></div>
+    <div class="fr"><div class="fg"><label>Mobile</label><input id="cm-m" value="${c?esc(c.phone_mobile||''):''}"></div><div class="fg"><label>WhatsApp</label><input id="cm-w" value="${c?esc(c.whatsapp||''):''}"></div></div>
+    <div class="fg"><label>Landline</label><input id="cm-l" value="${c?esc(c.phone_landline||''):''}"></div>
+  </div>
+  <div class="modal-ftr">${c?`<button class="btn-dl" onclick="delC(${c.id})">Delete</button>`:''}<button class="btn-cn" onclick="closeModal()">Cancel</button><button class="btn-sv" onclick="saveC(${c?.id||'null'},${c?.supplier_id||si})">${c?'Save':'Add'}</button></div>
+</div></div>`);}
+async function saveC(id,si){
+  const n=document.getElementById('cm-n').value.trim();if(!n){alert('Name required');return;}
+  const b={name:n,role:document.getElementById('cm-r').value,email:document.getElementById('cm-e').value.trim(),phone_mobile:document.getElementById('cm-m').value.trim(),whatsapp:document.getElementById('cm-w').value.trim(),phone_landline:document.getElementById('cm-l').value.trim(),is_primary:document.getElementById('cm-r').value==='Owner'};
+  try{if(id){await api('PATCH',`supplier_contacts?id=eq.${id}`,b);const i=conts.findIndex(x=>x.id===id);if(i>=0)conts[i]={...conts[i],...b};}else{b.supplier_id=si;const r=await api('POST','supplier_contacts',b);conts.push(r[0]);}closeModal();renderDetail(selId);showToast(id?'Contact updated':'Contact added','success');}catch(e){showToast('Error: '+e.message,'error');}
+}
+async function delC(id){if(!confirm('Delete this contact?'))return;try{await api('DELETE',`supplier_contacts?id=eq.${id}`);conts=conts.filter(x=>x.id!==id);closeModal();renderDetail(selId);showToast('Contact deleted','success');}catch(e){showToast('Error: '+e.message,'error');}}
+
+// ---- DESTINATION MODAL ----
+function openAddD(si){openDM(null,si);}
+function openEditD(id){openDM(dests.find(x=>x.id===id),null);}
+function openDM(d,si){showM(`<div class="modal-overlay"><div class="modal">
+  <div class="modal-hdr"><h2>${d?'Edit Destination':'Add Destination'}</h2><button class="modal-cls" onclick="closeModal()">✕</button></div>
+  <div class="modal-bdy">
+    <div class="fg"><label>Destination * (free text, auto CAPS)</label><input id="dm-d" value="${d?esc(d.destination):''}" oninput="this.value=this.value.toUpperCase()" placeholder="e.g. BALI, HONG KONG, KASHMIR"></div>
+    <div class="fg"><label>Package Name</label><input id="dm-p" value="${d?esc(d.package_name||''):''}"></div>
+    <div class="fr"><div class="fg"><label>Tier</label>${mkSel('dm-t',TIERS,d?.tier||'Standard')}</div><div class="fg"><label>Currency</label>${mkSel('dm-c',CURS,d?.currency||'INR')}</div></div>
+    <div class="fg"><label>Validity</label><input id="dm-v" value="${d?esc(d.validity||''):''}"></div>
+    <div class="fg"><label>Notes / Inclusions</label><textarea id="dm-n">${d?esc(d.notes||''):''}</textarea></div>
+  </div>
+  <div class="modal-ftr">${d?`<button class="btn-dl" onclick="delD(${d.id})">Delete</button>`:''}<button class="btn-cn" onclick="closeModal()">Cancel</button><button class="btn-sv" onclick="saveD(${d?.id||'null'},${d?.supplier_id||si})">${d?'Save':'Add'}</button></div>
+</div></div>`);}
+async function saveD(id,si){
+  const dest=document.getElementById('dm-d').value.trim().toUpperCase();if(!dest){alert('Destination required');return;}
+  const b={destination:dest,package_name:document.getElementById('dm-p').value.trim(),tier:document.getElementById('dm-t').value,currency:document.getElementById('dm-c').value,validity:document.getElementById('dm-v').value.trim(),notes:document.getElementById('dm-n').value.trim()};
+  try{if(id){await api('PATCH',`supplier_destinations?id=eq.${id}`,b);const i=dests.findIndex(x=>x.id===id);if(i>=0)dests[i]={...dests[i],...b};}else{b.supplier_id=si;const r=await api('POST','supplier_destinations',b);dests.push(r[0]);}closeModal();renderDetail(selId);showToast(id?'Destination updated':'Destination added','success');}catch(e){showToast('Error: '+e.message,'error');}
+}
+async function delD(id){if(!confirm('Delete this destination and its contacts?'))return;try{await api('DELETE',`supplier_destinations?id=eq.${id}`);dests=dests.filter(x=>x.id!==id);dconts=dconts.filter(x=>x.destination_id!==id);closeModal();renderDetail(selId);showToast('Destination deleted','success');}catch(e){showToast('Error: '+e.message,'error');}}
+
+// ---- DEST CONTACT MODAL ----
+function openAddDC(di,si){openDCM(null,di,si);}
+function openEditDC(id){openDCM(dconts.find(x=>x.id===id),null,null);}
+function openDCM(c,di,si){showM(`<div class="modal-overlay"><div class="modal">
+  <div class="modal-hdr"><h2>${c?'Edit Destination Contact':'Add Destination Contact'}</h2><button class="modal-cls" onclick="closeModal()">✕</button></div>
+  <div class="modal-bdy">
+    <div class="fr"><div class="fg"><label>Name *</label><input id="dc-n" value="${c?esc(c.name):''}"></div><div class="fg"><label>Role</label>${mkSel('dc-r',ROLES,c?.role||'Operations')}</div></div>
+    <div class="fg"><label>Email</label><input id="dc-e" value="${c?esc(c.email||''):''}"></div>
+    <div class="fr"><div class="fg"><label>Mobile</label><input id="dc-m" value="${c?esc(c.phone_mobile||''):''}"></div><div class="fg"><label>WhatsApp</label><input id="dc-w" value="${c?esc(c.whatsapp||''):''}"></div></div>
+  </div>
+  <div class="modal-ftr">${c?`<button class="btn-dl" onclick="delDC(${c.id})">Delete</button>`:''}<button class="btn-cn" onclick="closeModal()">Cancel</button><button class="btn-sv" onclick="saveDC(${c?.id||'null'},${c?.destination_id||di},${c?.supplier_id||si})">${c?'Save':'Add'}</button></div>
+</div></div>`);}
+async function saveDC(id,di,si){
+  const n=document.getElementById('dc-n').value.trim();if(!n){alert('Name required');return;}
+  const b={name:n,role:document.getElementById('dc-r').value,email:document.getElementById('dc-e').value.trim(),phone_mobile:document.getElementById('dc-m').value.trim(),whatsapp:document.getElementById('dc-w').value.trim()};
+  try{if(id){await api('PATCH',`supplier_destination_contacts?id=eq.${id}`,b);const i=dconts.findIndex(x=>x.id===id);if(i>=0)dconts[i]={...dconts[i],...b};}else{b.destination_id=di;b.supplier_id=si;const r=await api('POST','supplier_destination_contacts',b);dconts.push(r[0]);}closeModal();renderDetail(selId);showToast(id?'Contact updated':'Contact added','success');}catch(e){showToast('Error: '+e.message,'error');}
+}
+async function delDC(id){if(!confirm('Delete this contact?'))return;try{await api('DELETE',`supplier_destination_contacts?id=eq.${id}`);dconts=dconts.filter(x=>x.id!==id);closeModal();renderDetail(selId);showToast('Contact deleted','success');}catch(e){showToast('Error: '+e.message,'error');}}
+
+// ---- SERVICE MODAL ----
+function openAddSvc(si){openSvcM(null,si);}
+function openEditSvc(id){openSvcM(svcs.find(x=>x.id===id),null);}
+function openSvcM(v,si){showM(`<div class="modal-overlay"><div class="modal">
+  <div class="modal-hdr"><h2>${v?'Edit Service':'Add Service'}</h2><button class="modal-cls" onclick="closeModal()">✕</button></div>
+  <div class="modal-bdy">
+    <div class="fr">
+      <div class="fg"><label>Service Type *</label>${mkSel('sv-t',SVC_TYPES,v?.service_type||'Visa')}</div>
+      <div class="fg"><label>Country</label><select id="sv-c" style="width:100%;padding:9px 12px;border:1px solid #FFCDD2;border-radius:8px;font-size:13px;font-family:'Poppins',sans-serif;color:#2D0000;"><option value="">All / Not specific</option>${ctrs.map(c=>`<option value="${c.name}"${c.name===(v?.country||'')?' selected':''}>${c.name}</option>`).join('')}</select></div>
+    </div>
+    <div class="fg"><label>Notes</label><textarea id="sv-n">${v?esc(v.notes||''):''}</textarea></div>
+    <div class="fg"><label>Validity</label><input id="sv-v" value="${v?esc(v.validity||''):''}"></div>
+  </div>
+  <div class="modal-ftr">${v?`<button class="btn-dl" onclick="delSvc(${v.id})">Delete</button>`:''}<button class="btn-cn" onclick="closeModal()">Cancel</button><button class="btn-sv" onclick="saveSvc(${v?.id||'null'},${v?.supplier_id||si})">${v?'Save':'Add'}</button></div>
+</div></div>`);}
+async function saveSvc(id,si){
+  const b={service_type:document.getElementById('sv-t').value,country:document.getElementById('sv-c').value||null,notes:document.getElementById('sv-n').value.trim(),validity:document.getElementById('sv-v').value.trim(),is_active:true};
+  try{if(id){await api('PATCH',`supplier_services?id=eq.${id}`,b);const i=svcs.findIndex(x=>x.id===id);if(i>=0)svcs[i]={...svcs[i],...b};}else{b.supplier_id=si;const r=await api('POST','supplier_services',b);svcs.push(r[0]);}closeModal();renderDetail(selId);showToast(id?'Service updated':'Service added','success');}catch(e){showToast('Error: '+e.message,'error');}
+}
+async function delSvc(id){if(!confirm('Delete this service?'))return;try{await api('DELETE',`supplier_services?id=eq.${id}`);svcs=svcs.filter(x=>x.id!==id);closeModal();renderDetail(selId);showToast('Service deleted','success');}catch(e){showToast('Error: '+e.message,'error');}}
+
+// ---- DESTINATIONS MASTER PANEL ----
+async function openDestPanel(){document.getElementById('dest-panel').classList.add('open');await renderDP();}
+function closeDestPanel(){document.getElementById('dest-panel').classList.remove('open');}
+async function renderDP(){
+  const body=document.getElementById('dp-body');
+  const g={International:[],Domestic:[],Special:[]};
+  dm.forEach(d=>(g[d.region]||g['Special']).push(d));
+  body.innerHTML=`<div style="margin-bottom:14px;"><button class="add-btn" onclick="openAddDM()">+ Add Destination</button></div>`+
+    Object.entries(g).map(([grp,ds])=>ds.length?`<div style="margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:700;color:#E57373;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">${grp} (${ds.length})</div>
+      ${ds.map(d=>{const u=dests.filter(x=>(x.destination||'').toUpperCase()===d.name).length;const geo=[d.city,d.state,d.country].filter(Boolean).join(' › ');return`<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #FFEBEE;">
+        <span style="font-weight:600;font-size:13px;color:#8B0000;flex:1;">${esc(d.name)}</span>
+        <span style="font-size:11px;color:#E57373;">${geo}</span>
+        ${u?`<span class="bdg bdg-on">${u} supp</span>`:''}
+        <button class="ibtn d" onclick="delDM(${d.id},${u},'${d.name.replace(/'/g,"\\'")}')">🗑</button>
+      </div>`;}).join('')}
+    </div>`:'').join('');
+}
+function openAddDM(){showM(`<div class="modal-overlay"><div class="modal">
+  <div class="modal-hdr"><h2>Add Destination</h2><button class="modal-cls" onclick="closeModal()">✕</button></div>
+  <div class="modal-bdy">
+    <div class="fr"><div class="fg"><label>Name * (CAPS)</label><input id="adm-n" placeholder="e.g. BALI" oninput="this.value=this.value.toUpperCase()"></div><div class="fg"><label>Region</label>${mkSel('adm-r',['International','Domestic','Special'],'International')}</div></div>
+    <div class="fg"><label>Country</label>${mkCS('adm-country')}</div>
+    <div class="fr">
+      <div class="fg"><label>State</label><select id="adm-state" onchange="onSC('adm-state','adm-country')" style="width:100%;padding:9px 12px;border:1px solid #FFCDD2;border-radius:8px;font-size:13px;font-family:'Poppins',sans-serif;color:#2D0000;"><option value="">Select state</option></select></div>
+      <div class="fg"><label>City</label><select id="adm-city" style="width:100%;padding:9px 12px;border:1px solid #FFCDD2;border-radius:8px;font-size:13px;font-family:'Poppins',sans-serif;color:#2D0000;"><option value="">Select city</option></select></div>
+    </div>
+  </div>
+  <div class="modal-ftr"><button class="btn-cn" onclick="closeModal()">Cancel</button><button class="btn-sv" onclick="saveDM()">Add</button></div>
+</div></div>`);}
+async function saveDM(){
+  const n=document.getElementById('adm-n').value.trim().toUpperCase();if(!n){alert('Name required');return;}
+  const b={name:n,region:document.getElementById('adm-r').value,country:document.getElementById('adm-country').value,state:document.getElementById('adm-state').value,city:document.getElementById('adm-city').value,is_active:true};
+  try{const r=await api('POST','destination_master',b);dm.push(r[0]);dm.sort((a,b)=>a.name.localeCompare(b.name));closeModal();renderDP();showToast('Destination added','success');}catch(e){showToast('Error: '+e.message,'error');}
+}
+async function delDM(id,u,name){if(u>0){alert(`Cannot delete "${name}" — used by ${u} supplier(s). Remove from those suppliers first.`);return;}if(!confirm(`Delete "${name}" from master list?`))return;try{await api('DELETE',`destination_master?id=eq.${id}`);dm=dm.filter(x=>x.id!==id);renderDP();showToast('Destination deleted','success');}catch(e){showToast('Error: '+e.message,'error');}}
+
+function showToast(msg,type='success'){const t=document.getElementById('toast');t.textContent=msg;t.className='show '+type;setTimeout(()=>t.className='',3000);}
+</script>
+</body>
+</html>
